@@ -26,7 +26,8 @@
     "path": "/",
     "host": "",
     "logo": "riedel",
-    "note": ""
+    "note": "",
+    "service": "MNSet"
   },
   {
     "name": "MuoN config",

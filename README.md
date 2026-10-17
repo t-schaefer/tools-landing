@@ -84,8 +84,9 @@ what runs here. Until then the card says **not set up**.
 - The landing page runs as SYSTEM, so these actions run as SYSTEM. Every action
   is logged in `service.log`. The landing page does not stop or update itself
   (use `Stop-Landing.bat` / `Update-Landing.bat`).
-- Only the Neuron Audio Router is pre-set. For Fusion Dashboard, MNset and MuoN
-  config, add `task` or `service` in `tools.json` (Notepad as Administrator),
+- Pre-set: Neuron Audio Router (task `NeuronAudioRouterService`) and MNset
+  (service `MNSet`) - an existing `tools.json` gets them on the next start.
+  For Fusion Dashboard and MuoN config, add `task` or `service` in `tools.json` (Notepad as Administrator),
   then the page picks it up within 15 s.
 
 ## Update

@@ -51,7 +51,7 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
-VERSION = "2026-10-17.6"            # shown in the page footer - bump with every change
+VERSION = "2026-10-17.7"            # shown in the page footer - bump with every change
 STARTED = datetime.now().isoformat(timespec="seconds")
 # logo when a tool has none set: first keyword found in its name (case and spaces ignored)
 LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
@@ -82,7 +82,7 @@ def load_tools():
 
 def fill_from_example():
     """A tools.json made by an older version lacks newer fields (logo, note, task,
-    update). Copy them from tools.example.json for tools with the same name (case and
+    service, update). Copy them from tools.example.json for tools with the same name (case and
     spaces ignored) - only when the field is missing (or the logo empty), never over a
     value set here."""
     if not TOOLS_FILE.exists():
@@ -95,7 +95,7 @@ def fill_from_example():
         ex = example.get(norm(t.get("name")))
         if not ex:
             continue
-        for f in ("logo", "note", "task", "update"):
+        for f in ("logo", "note", "task", "service", "update"):
             # a missing field is filled; an empty logo too (a card without logo is never wanted)
             if (f not in t or (f == "logo" and not t[f])) and ex.get(f):
                 t[f] = ex[f]
