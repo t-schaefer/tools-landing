@@ -72,6 +72,7 @@ can never choose what runs here. Until then the card says **not set up**.
 | `service` | Windows service name instead (services.msc → "Service name") |
 | `start` / `stop` | optional: the tool's own `.ps1` (what its Start/Stop .bat runs) - used instead of the task |
 | `update` | the tool's `update-windows.ps1` - shows the Update button |
+| `controls` | `false` = no Service row on that card (e.g. MNset) |
 
 Script paths are relative to this folder and must be a `.ps1` inside the folder
 that holds the tools. **Clone everything into `C:\Apps`** like the Fusion
@@ -81,6 +82,7 @@ Dashboard:
 C:\Apps\tools-landing
 C:\Apps\neuron-acp-toolkit
 C:\Apps\Fusion Dashboard\RiedelFusionDashboard
+C:\Apps\RiedelMuoNConfig
 ```
 
 Pre-set (an existing `tools.json` gets these on the next start):
@@ -89,8 +91,8 @@ Pre-set (an existing `tools.json` gets these on the next start):
 |---|---|---|---|
 | Neuron Audio Router | task `NeuronAudioRouterService` | `stop-windows.ps1` | `update-windows.ps1` |
 | Fusion Dashboard | task `PLSFusionDashboardService` | `stop-windows.ps1` | `update-windows.ps1` |
-| MNset | service `MNSet` | service | – |
-| MuoN config | task `MuoNConfigToolService` | task | – (add `update` if wanted) |
+| MNset | – no Service row (`"controls": false`) | | |
+| MuoN config | task `MuoNConfigToolService` | task | `update-windows.ps1` |
 
 Start uses the task / service directly: Fusion's `start-windows.ps1` would run
 the dashboard in a console window when the task is missing, which hangs in the
