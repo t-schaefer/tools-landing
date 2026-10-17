@@ -42,8 +42,9 @@ unpack it and run `Install-Landing.bat` from there.
   for dark mode. Shipped: `evs` (EVS, from evs.com) and `riedel` (Riedel, from
   riedel.net, with a white version), `premier-league` (premierleague.com, purple
   + white). Drop another file there and it shows up in the choice.
-- Neuron Audio Router uses `evs`, the Riedel tools `riedel`. An already installed
-  page keeps its `tools.json`: pick the logos once in Edit list.
+- Neuron Audio Router uses `evs`, the Riedel tools `riedel`. An older `tools.json`
+  gets missing logo / note / task / update from `tools.example.json` on the next
+  start (by tool name, only where the field is missing - your own values stay).
 
 ## Christmas
 

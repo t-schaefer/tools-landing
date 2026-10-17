@@ -74,6 +74,28 @@ def load_tools():
         return json.loads(TOOLS_FILE.read_text(encoding="utf-8"))
 
 
+def fill_from_example():
+    """A tools.json made by an older version lacks newer fields (logo, note, task,
+    update). Copy them from tools.example.json for tools with the same name - only
+    when the field is missing, never over a value set here (an empty one included)."""
+    if not TOOLS_FILE.exists():
+        return
+    tools = load_tools()
+    example = {t["name"]: t for t in json.loads(TOOLS_EXAMPLE_FILE.read_text(encoding="utf-8"))}
+    changed = []
+    for t in tools:
+        ex = example.get(t.get("name"))
+        if not ex:
+            continue
+        for f in ("logo", "note", "task", "update"):
+            if f not in t and ex.get(f):
+                t[f] = ex[f]
+                changed.append(f"{t['name']}.{f}")
+    if changed:
+        save_tools(tools)
+        log.info("tools.json: added from tools.example.json: %s", ", ".join(changed))
+
+
 def save_tools(tools):
     with _tools_lock:
         tmp = TOOLS_FILE.with_suffix(".tmp")
@@ -319,6 +341,7 @@ def main():
     ap.add_argument("--port", type=int, default=80)
     args = ap.parse_args()
     load_tools()
+    fill_from_example()
     threading.Thread(target=check_loop, daemon=True).start()
     srv = Server((args.host, args.port), Handler)
     log.info("Tools landing page on http://%s:%d/", args.host, args.port)
