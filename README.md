@@ -60,8 +60,10 @@ Snow is off for users who chose "reduce motion".
 
 ## Start / Stop / Update from the page
 
-Hidden by default: press **🔧 Engineering** (top right) to show them and
-**Edit list**; a yellow bar shows the mode is on. It is not remembered - a
+Hidden by default: press **🔧 Engineering** (top right) - it warns that these
+buttons control live services other people are using, and needs the tick box
+"I know what I'm doing" - then shows them and **Edit list**; a yellow bar
+shows the mode is on. It is not remembered - a
 reload or new visitor starts without it.
 
 In engineering mode every card of a tool on this server has a **Service** row with **Start**,
