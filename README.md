@@ -9,9 +9,9 @@ Default tools (`tools.example.json`):
 | Tool | Port |
 |---|---|
 | Neuron Audio Router | 8101 |
-| Fusion Dashboard | 8100 (check) |
+| Fusion Dashboard | 8090 |
 | MNset | 8080 |
-| MuoN config | 8090 |
+| MuoN config | 8091 |
 
 ## Install on the Windows server (once)
 

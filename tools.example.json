@@ -8,8 +8,8 @@
   },
   {
     "name": "Fusion Dashboard",
-    "description": "Fleet monitoring and bulk config of the Fusion devices. Check the port in the page's Edit mode.",
-    "port": 8100,
+    "description": "Fleet monitoring and bulk config of the Fusion devices.",
+    "port": 8090,
     "path": "/",
     "host": ""
   },
@@ -23,7 +23,7 @@
   {
     "name": "MuoN config",
     "description": "MuoN configuration on this server.",
-    "port": 8090,
+    "port": 8091,
     "path": "/",
     "host": ""
   }
