@@ -183,7 +183,7 @@ function render() {
         const svc = !t.local ? "" : `<div class="svc"><span class="lbl" title="${esc(t.unit || why)}">Service: <b>${t.unit ? esc(t.unit_state || "…") : "not set up"}</b></span>
                 <button class="btn sm" data-svc="start" data-i="${i}" ${ok ? "" : "disabled"} title="${esc(why)}">Start</button>
                 <button class="btn sm warn" data-svc="stop" data-i="${i}" ${ok ? "" : "disabled"} title="${esc(why)}">Stop</button>
-                <button class="btn sm" data-svc="update" data-i="${i}" ${ok && t.can_update ? "" : "disabled"} title="${esc(why || (t.can_update ? "" : "no update script set for this tool"))}">Update</button></div>`
+                ${t.can_update ? `<button class="btn sm" data-svc="update" data-i="${i}" ${ok ? "" : "disabled"} title="${esc(why)}">Update</button>` : ""}</div>`
             + `${j ? `<div class="job ${j.state}">${esc(j.action)}: ${busy ? "running …" : esc(j.state)} <span class="muted">${esc((j.finished || j.started || "").replace("T", " "))}</span>
                 ${j.output ? `<details ${j.state === "failed" ? "open" : ""}><summary>output</summary><pre>${esc(j.output)}</pre></details>` : ""}</div>` : ""}`;
         return `<div class="tool ${cls}" title="${esc(s && s.error ? s.error : "")}">${logoHtml(t.logo)}

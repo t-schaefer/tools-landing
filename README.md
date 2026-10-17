@@ -79,8 +79,8 @@ what runs here. Until then the card says **not set up**.
   or `sc query state= all`).
 - `update` (optional): the tool's update `.ps1`, relative to this folder and
   inside the folder that holds the repos (clone the tools next to each other,
-  e.g. `C:\Tools\tools-landing`, `C:\Tools\neuron-acp-toolkit`). Without it,
-  Update stays greyed out - vendor tools (MNset, MuoN) update their own way.
+  e.g. `C:\Tools\tools-landing`, `C:\Tools\neuron-acp-toolkit`). Without it
+  there is no Update button - vendor tools (MNset, MuoN) update their own way.
 - The landing page runs as SYSTEM, so these actions run as SYSTEM. Every action
   is logged in `service.log`. The landing page does not stop or update itself
   (use `Stop-Landing.bat` / `Update-Landing.bat`).
