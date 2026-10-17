@@ -33,6 +33,15 @@ opened from.
 Without git: download https://github.com/t-schaefer/tools-landing/archive/refs/heads/main.zip,
 unpack it and run `Install-Landing.bat` from there.
 
+## Logos and order
+
+- **Edit list** has ▲ / ▼ to change the order of the cards and a **Logo** choice per tool.
+- Logos live in `logos/`: `<name>.svg|png|jpg|webp`, optionally `<name>-white.*`
+  for dark mode. Shipped: `evs` (EVS, from evs.com) and `riedel` (Riedel, from
+  riedel.net, with a white version). Drop another file there and it shows up in the choice.
+- Neuron Audio Router uses `evs`, the Riedel tools `riedel`. An already installed
+  page keeps its `tools.json`: pick the logos once in Edit list.
+
 ## Start / Stop / Update from the page
 
 A tool with a Windows task name gets **Start** and **Stop** buttons and its

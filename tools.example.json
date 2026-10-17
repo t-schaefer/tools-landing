@@ -6,27 +6,31 @@
     "path": "/",
     "host": "",
     "task": "NeuronAudioRouterService",
-    "update": "../neuron-acp-toolkit/update-windows.ps1"
+    "update": "../neuron-acp-toolkit/update-windows.ps1",
+    "logo": "evs"
   },
   {
     "name": "Fusion Dashboard",
     "description": "Fleet monitoring and bulk config of the Fusion devices.",
     "port": 8090,
     "path": "/",
-    "host": ""
+    "host": "",
+    "logo": "riedel"
   },
   {
     "name": "MNset",
     "description": "MNset on this server.",
     "port": 8080,
     "path": "/",
-    "host": ""
+    "host": "",
+    "logo": "riedel"
   },
   {
     "name": "MuoN config",
     "description": "MuoN configuration on this server.",
     "port": 8091,
     "path": "/",
-    "host": ""
+    "host": "",
+    "logo": "riedel"
   }
 ]

@@ -37,6 +37,9 @@ BASE_DIR = Path(__file__).resolve().parent
 PAGE_FILE = BASE_DIR / "index.html"
 TOOLS_FILE = BASE_DIR / "tools.json"
 TOOLS_EXAMPLE_FILE = BASE_DIR / "tools.example.json"
+LOGO_DIR = BASE_DIR / "logos"       # <name>.svg/.png, optional <name>-white.* for dark mode
+LOGO_FILE_RE = re.compile(r'^[a-z0-9\-]{1,40}\.(svg|png|jpg|jpeg|webp)$')
+LOGO_TYPES = {"svg": "image/svg+xml", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}
 LOG_FILE = BASE_DIR / "service.log"
 CHECK_INTERVAL_SEC = 15
 CHECK_TIMEOUT_SEC = 2
@@ -75,6 +78,22 @@ def save_tools(tools):
         tmp.replace(TOOLS_FILE)
 
 
+def logos():
+    """Available logos: {name: {"file": ..., "white": ... or None}}"""
+    out = {}
+    if LOGO_DIR.is_dir():
+        files = sorted(p.name for p in LOGO_DIR.iterdir() if LOGO_FILE_RE.match(p.name))
+        for f in files:
+            base = f.rsplit(".", 1)[0]
+            if not base.endswith("-white"):
+                out.setdefault(base, {"file": f, "white": None})
+        for f in files:
+            base = f.rsplit(".", 1)[0]
+            if base.endswith("-white") and base[:-6] in out:
+                out[base[:-6]]["white"] = f
+    return out
+
+
 def clean_tool(t):
     name = str(t.get("name", "")).strip()
     if not 1 <= len(name) <= 60:
@@ -88,8 +107,11 @@ def clean_tool(t):
     path = str(t.get("path", "") or "/").strip() or "/"
     if not PATH_RE.match(path):
         raise ValueError("path must start with /")
+    logo = str(t.get("logo", "") or "").strip()
+    if logo and logo not in logos():
+        raise ValueError(f"logo {logo!r} not found in logos/")
     return {"name": name, "description": str(t.get("description", "")).strip()[:200],
-            "port": port, "path": path, "host": host}
+            "port": port, "path": path, "host": host, "logo": logo}
 
 
 def merge_server_fields(new_tools, old_tools):
@@ -106,7 +128,7 @@ def merge_server_fields(new_tools, old_tools):
 
 def public(t):
     """What the browser gets: no script paths, only whether actions exist."""
-    out = {k: t.get(k, "") for k in ("name", "description", "port", "path", "host")}
+    out = {k: t.get(k, "") for k in ("name", "description", "port", "path", "host", "logo")}
     out["task"] = t.get("task") or ""
     out["can_update"] = bool(t.get("update"))
     return out
@@ -233,7 +255,16 @@ class Handler(BaseHTTPRequestHandler):
             tools = load_tools()
             self._json({"tools": [{**public(t), "status": STATUS.get(key(t)), "task_state": TASKS.get(t.get("task") or ""),
                                    "job": JOBS.get(t.get("task") or "")} for t in tools],
-                        "interval": CHECK_INTERVAL_SEC, "windows": IS_WINDOWS})
+                        "interval": CHECK_INTERVAL_SEC, "windows": IS_WINDOWS, "logos": logos()})
+        elif self.path.startswith("/logos/") and LOGO_FILE_RE.match(self.path[7:]) and (LOGO_DIR / self.path[7:]).is_file():
+            body = (LOGO_DIR / self.path[7:]).read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", LOGO_TYPES[self.path.rsplit(".", 1)[1]])
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "max-age=3600")
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+            self.end_headers()
+            self.wfile.write(body)
         else:
             self._json({"error": "not found"}, 404)
 
