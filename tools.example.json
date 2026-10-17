@@ -4,7 +4,9 @@
     "description": "Graphical audio routing for the EVS Neuron IPG units over ACP2 - assisted / manual mode, Preset, TAKE, Undo.",
     "port": 8101,
     "path": "/",
-    "host": ""
+    "host": "",
+    "task": "NeuronAudioRouterService",
+    "update": "../neuron-acp-toolkit/update-windows.ps1"
   },
   {
     "name": "Fusion Dashboard",

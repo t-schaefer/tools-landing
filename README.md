@@ -33,6 +33,31 @@ opened from.
 Without git: download https://github.com/t-schaefer/tools-landing/archive/refs/heads/main.zip,
 unpack it and run `Install-Landing.bat` from there.
 
+## Start / Stop / Update from the page
+
+A tool with a Windows task name gets **Start** and **Stop** buttons and its
+service state, and with an update script also **Update** (each asks first, the
+output of an update is shown on the card). Set them in `tools.json` on the
+server - on purpose not in the page, so a browser can never choose what runs:
+
+```json
+{ "name": "Neuron Audio Router", "port": 8101, "path": "/", "host": "",
+  "task": "NeuronAudioRouterService",
+  "update": "../neuron-acp-toolkit/update-windows.ps1" }
+```
+
+- `task`: the Scheduled Task name (Task Scheduler / `schtasks /query`).
+- `update`: path to the tool's update `.ps1`, relative to this folder. It must
+  be a `.ps1` inside the folder that holds this repo and its sibling repos
+  (clone the tools next to each other, e.g. `C:\Tools\tools-landing`,
+  `C:\Tools\neuron-acp-toolkit`).
+- The landing page runs as SYSTEM, so these actions run as SYSTEM. Every action
+  is logged in `service.log`. The landing page does not stop or update itself
+  (use `Stop-Landing.bat` / `Update-Landing.bat`).
+- Only the Neuron Audio Router is pre-set. For Fusion Dashboard, MNset and
+  MuoN config add their task names (and update scripts) to `tools.json`.
+- An already installed page keeps its `tools.json`: add `task` / `update` there by hand.
+
 ## Update
 
 Double-click **`Update-Landing.bat`**: stops the task, `git pull` (or the

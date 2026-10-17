@@ -8,6 +8,11 @@ Tools landing page - one start page for the web tools running on this server.
 - Every 15 s the service checks each tool with one HTTP GET (2 s timeout) and
   shows up / down. The browser talks only to this service.
 - The tool list can be edited in the page (add / change / remove).
+- Service control (Windows): a tool with "task" (Scheduled Task name) gets
+  Start / Stop buttons, with "update" (path to its update-windows.ps1, relative
+  to this folder) an Update button. "task" and "update" are only read from
+  tools.json on the server - the page can not set them, so a browser can never
+  choose what runs here. Every action is logged in service.log.
 
     python server.py               # http://<this pc>/
     python server.py --port 8100
@@ -15,7 +20,9 @@ Tools landing page - one start page for the web tools running on this server.
 import argparse
 import json
 import logging
+import os
 import re
+import subprocess
 import threading
 import time
 import urllib.error
@@ -35,6 +42,9 @@ CHECK_INTERVAL_SEC = 15
 CHECK_TIMEOUT_SEC = 2
 HOST_RE = re.compile(r'^[A-Za-z0-9.\-]{0,253}$')
 PATH_RE = re.compile(r'^/[\w\-./?=&%#~]*$')
+TASK_RE = re.compile(r'^[\w .\-]{1,80}$')
+UPDATE_TIMEOUT_SEC = 900
+IS_WINDOWS = os.name == "nt"
 
 log = logging.getLogger("landing")
 log.setLevel(logging.INFO)
@@ -45,6 +55,9 @@ log.addHandler(logging.StreamHandler())
 
 _tools_lock = threading.Lock()
 STATUS = {}          # tool key -> {"up", "ms", "code", "error", "checked"}
+TASKS = {}           # task name -> "Running" / "Ready" / "Disabled" / "not installed" / error text
+JOBS = {}            # task name -> {"action", "state", "started", "finished", "output"}
+_job_lock = threading.Lock()
 
 
 def load_tools():
@@ -79,6 +92,89 @@ def clean_tool(t):
             "port": port, "path": path, "host": host}
 
 
+def merge_server_fields(new_tools, old_tools):
+    """task / update are server-only: keep them from the old tools.json entry with the
+    same host + port (the page can not set or change them)."""
+    old = {(o.get("host") or "", int(o.get("port") or 0)): o for o in old_tools}
+    for t in new_tools:
+        o = old.get((t["host"], t["port"]), {})
+        for f in ("task", "update"):
+            if o.get(f):
+                t[f] = o[f]
+    return new_tools
+
+
+def public(t):
+    """What the browser gets: no script paths, only whether actions exist."""
+    out = {k: t.get(k, "") for k in ("name", "description", "port", "path", "host")}
+    out["task"] = t.get("task") or ""
+    out["can_update"] = bool(t.get("update"))
+    return out
+
+
+def update_script(t):
+    """The tool's update script, resolved and checked: an existing *.ps1 inside the
+    folder that holds this repo and its sibling repos."""
+    rel = t.get("update") or ""
+    if not rel:
+        raise ValueError(f"{t['name']}: no update script configured in tools.json")
+    p = (BASE_DIR / rel).resolve()
+    root = BASE_DIR.parent.resolve()
+    if p.suffix.lower() != ".ps1" or root not in p.parents or not p.is_file():
+        raise ValueError(f"{t['name']}: update script not found or not allowed: {rel}")
+    return p
+
+
+def task_state(task):
+    if not IS_WINDOWS:
+        return "only on Windows"
+    r = subprocess.run(["schtasks", "/query", "/tn", task, "/fo", "csv", "/nh"],
+                       capture_output=True, text=True, timeout=15)
+    if r.returncode != 0:
+        return "not installed"
+    cols = [c.strip('"') for c in r.stdout.strip().splitlines()[-1].split('","')]
+    return cols[-1] if cols else "?"
+
+
+def run_action(t, action):
+    """start / stop / update one tool's service. Returns the job record."""
+    task = t.get("task") or ""
+    if not TASK_RE.match(task):
+        raise ValueError(f"{t['name']}: no Windows task configured in tools.json")
+    if not IS_WINDOWS:
+        raise ValueError("service control works only on the Windows server")
+    script = update_script(t) if action == "update" else None
+    with _job_lock:
+        j = JOBS.get(task)
+        if j and j["state"] == "running":
+            raise ValueError(f"{t['name']}: '{j['action']}' is still running")
+        job = {"action": action, "state": "running", "started": datetime.now().isoformat(timespec="seconds"),
+               "finished": None, "output": ""}
+        JOBS[task] = job
+    log.warning("SERVICE %s %s (task %s) requested from the page", action.upper(), t["name"], task)
+
+    def work():
+        try:
+            if action == "start":
+                cmd, timeout = ["schtasks", "/run", "/tn", task], 30
+            elif action == "stop":
+                cmd, timeout = ["schtasks", "/end", "/tn", task], 30
+            else:
+                cmd, timeout = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)], UPDATE_TIMEOUT_SEC
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=str(script.parent) if script else None)
+            job["output"] = (r.stdout + r.stderr).strip()[-8000:]
+            job["state"] = "done" if r.returncode == 0 else "failed"
+        except Exception as e:
+            job["output"] += f"\n{e}"
+            job["state"] = "failed"
+        job["finished"] = datetime.now().isoformat(timespec="seconds")
+        TASKS[task] = task_state(task)
+        log.warning("SERVICE %s %s: %s", action.upper(), t["name"], job["state"])
+
+    threading.Thread(target=work, daemon=True).start()
+    return job
+
+
 def key(t):
     return f"{t.get('host') or 'localhost'}:{t['port']}{t.get('path') or '/'}"
 
@@ -104,6 +200,12 @@ def check_loop():
             tools = load_tools()
             for t, res in zip(tools, pool.map(check, tools)):
                 STATUS[key(t)] = {**res, "checked": datetime.now().isoformat(timespec="seconds")}
+            for t in tools:
+                if t.get("task") and TASK_RE.match(t["task"]):
+                    try:
+                        TASKS[t["task"]] = task_state(t["task"])
+                    except Exception as e:
+                        TASKS[t["task"]] = f"? ({str(e)[:60]})"
         except Exception as e:
             log.warning("check failed: %s", e)
         time.sleep(CHECK_INTERVAL_SEC)
@@ -129,7 +231,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(PAGE_FILE.read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/api/tools":
             tools = load_tools()
-            self._json({"tools": [{**t, "status": STATUS.get(key(t))} for t in tools], "interval": CHECK_INTERVAL_SEC})
+            self._json({"tools": [{**public(t), "status": STATUS.get(key(t)), "task_state": TASKS.get(t.get("task") or ""),
+                                   "job": JOBS.get(t.get("task") or "")} for t in tools],
+                        "interval": CHECK_INTERVAL_SEC, "windows": IS_WINDOWS})
         else:
             self._json({"error": "not found"}, 404)
 
@@ -144,11 +248,19 @@ class Handler(BaseHTTPRequestHandler):
                 tools = [clean_tool(t) for t in req.get("tools", [])]
                 if len(tools) > 50:
                     raise ValueError("at most 50 tools")
-                save_tools(tools)
+                save_tools(merge_server_fields(tools, load_tools()))
                 log.info("tool list saved: %s", ", ".join(f"{t['name']}:{t['port']}" for t in tools))
                 for t in tools:
                     STATUS[key(t)] = {**check(t), "checked": datetime.now().isoformat(timespec="seconds")}
                 self._json({"ok": True})
+            elif self.path == "/api/service":
+                action = req.get("action")
+                if action not in ("start", "stop", "update"):
+                    raise ValueError("action must be start, stop or update")
+                hit = [t for t in load_tools() if t["name"] == req.get("name")]
+                if not hit:
+                    raise ValueError("unknown tool")
+                self._json(run_action(hit[0], action))
             else:
                 self._json({"error": "not found"}, 404)
         except (ValueError, TypeError, json.JSONDecodeError) as e:
