@@ -42,6 +42,15 @@ unpack it and run `Install-Landing.bat` from there.
 - Neuron Audio Router uses `evs`, the Riedel tools `riedel`. An already installed
   page keeps its `tools.json`: pick the logos once in Edit list.
 
+## Christmas
+
+From 1 to 31 December (by the server's date) the page shows Christmas
+decoration: lights along the top, snow, a large banner with a link to Mariah
+Carey's "All I Want for Christmas Is You" on YouTube. Nothing to switch - it
+turns on and off by itself. `CHRISTMAS_TEST_UNTIL` in `server.py` shows it
+before that up to and including that date (a preview; empty = December only).
+Snow is off for users who chose "reduce motion".
+
 ## Start / Stop / Update from the page
 
 A tool with a Windows task name gets **Start** and **Stop** buttons and its

@@ -47,15 +47,52 @@
     .edit { margin-top: 24px; } .edit .bar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
     .err { color: var(--bad); font-size: 0.85rem; }
     .hidden { display: none; }
+    /* ---- Christmas (1-31 Dec, server date) ---- */
+    .xmas-only { display: none; } body.xmas .xmas-only { display: inline-flex; }
+    .greet { align-items: center; gap: 6px; margin-left: 10px; padding: 2px 10px; border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+             background: #b3122422; color: #c8102e; border: 1px solid #c8102e55; vertical-align: middle; }
+    @media (prefers-color-scheme: dark) { .greet { color: #ff8a8a; background: #ff6b6b1a; border-color: #ff6b6b55; } }
+    .lights { position: fixed; top: 0; left: 0; right: 0; height: 46px; pointer-events: none; z-index: 5; display: none; overflow: hidden; }
+    body.xmas .lights { display: block; }
+    .lights::before { content: ""; position: absolute; left: -10px; right: -10px; top: -20px; height: 34px; border-bottom: 3px solid #2f5d34; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+    .lights span { position: absolute; top: 10px; width: 15px; height: 24px; border-radius: 50%; animation: twinkle 1.6s ease-in-out infinite alternate; }
+    .lights span::before { content: ""; position: absolute; top: -5px; left: 4px; width: 7px; height: 6px; background: #3b3b3b; border-radius: 1px; }
+    @keyframes twinkle { from { opacity: 1; box-shadow: 0 3px 18px 5px currentColor; } to { opacity: 0.35; box-shadow: none; } }
+    .snow { position: fixed; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; display: none; }
+    body.xmas .snow { display: block; }
+    .snow i { position: absolute; top: -30px; color: #fff; text-shadow: 0 0 3px #8aa4c0; font-style: normal; animation: fall linear infinite; }
+    @media (prefers-color-scheme: light) { .snow i { color: #c9d9ec; text-shadow: 0 0 2px #7f9fc2; } }
+    @keyframes fall { to { transform: translate(var(--drift), 105vh) rotate(360deg); } }
+    body.xmas main { padding-top: 64px; }
+    .xmas-banner { display: none; position: relative; overflow: hidden; margin: 0 0 22px; padding: 26px 22px; border-radius: 16px; text-align: center; color: #fff;
+                   background: linear-gradient(135deg, #b3121f 0%, #8e0e18 45%, #1f5f2e 100%); box-shadow: 0 10px 30px rgba(179,18,31,0.35); }
+    body.xmas .xmas-banner { display: block; }
+    .xmas-banner h2 { margin: 0; font-size: clamp(2rem, 6vw, 3.6rem); line-height: 1.1; letter-spacing: 0.02em; text-shadow: 0 3px 12px rgba(0,0,0,0.35); }
+    .xmas-banner p { margin: 8px 0 18px; font-size: 1.05rem; opacity: 0.95; }
+    .xmas-banner .tree { font-size: clamp(2.4rem, 7vw, 4.2rem); display: inline-block; animation: sway 2.4s ease-in-out infinite alternate; }
+    @keyframes sway { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+    .xmas-banner a.play { display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 999px; background: #fff; color: #b3121f;
+                          font-weight: 700; font-size: 1.05rem; text-decoration: none; box-shadow: 0 4px 14px rgba(0,0,0,0.25); transition: transform .15s; }
+    .xmas-banner a.play:hover { transform: scale(1.05); }
+    .xmas-banner a.play .yt { display: inline-flex; width: 30px; height: 21px; border-radius: 6px; background: #ff0000; color: #fff; align-items: center; justify-content: center; font-size: 0.75rem; }
+    @media (prefers-reduced-motion: reduce) { .snow { display: none !important; } .lights span { animation: none; } }
     @media (max-width: 640px) { .edit table, .edit thead, .edit tbody, .edit tr, .edit td { display: block; } .edit thead { display: none; } .edit tr { padding: 8px; border-bottom: 1px solid var(--line); } .edit td { border: 0; padding: 3px 0; } }
 </style>
 </head>
 <body>
+<div class="lights" id="lights" aria-hidden="true"></div>
+<div class="snow" id="snow" aria-hidden="true"></div>
 <main>
     <header>
-        <div><h1>Tools on <span id="host"></span></h1><div class="muted">Status is checked by this server every <span id="iv">15</span> s.</div></div>
+        <div><h1>Tools on <span id="host"></span><span class="greet xmas-only" title="Christmas decoration 1–31 December (server date)">🎄 Merry Christmas</span></h1><div class="muted">Status is checked by this server every <span id="iv">15</span> s.</div></div>
         <button class="btn" id="editBtn">Edit list</button>
     </header>
+    <section class="xmas-banner" aria-label="Christmas">
+        <div><span class="tree">🎄</span></div>
+        <h2>Merry Christmas! 🎅</h2>
+        <p>Happy holidays – and a smooth New Year on air. ✨</p>
+        <a class="play" href="https://www.youtube.com/watch?v=aAkMkVFwAoo" target="_blank" rel="noopener"><span class="yt">▶</span>Mariah Carey – All I Want for Christmas Is You</a>
+    </section>
     <div class="grid" id="grid"><div class="muted">Loading …</div></div>
 
     <section class="edit hidden" id="edit">
@@ -70,7 +107,21 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-let tools = [], editing = false, winOk = false, LOGOS = {};
+let tools = [], editing = false, winOk = false, LOGOS = {}, xmasBuilt = false;
+// Christmas decoration: on when the server says so (1-31 December by the server's date)
+function setChristmas(on) {
+    document.body.classList.toggle("xmas", !!on);
+    if (!on || xmasBuilt) return;
+    xmasBuilt = true;
+    const colors = ["#e53935", "#fdd835", "#43a047", "#1e88e5", "#fb8c00", "#d81b60"];
+    const n = Math.ceil(window.innerWidth / 46);
+    $("lights").innerHTML = Array.from({ length: n }, (_, i) =>
+        `<span style="left:${i * 46 + 16}px; top:${10 + 9 * Math.sin(i / n * Math.PI)}px; background:${colors[i % colors.length]}; color:${colors[i % colors.length]}; animation-delay:${(i % 5) * 0.3}s"></span>`).join("");
+    $("snow").innerHTML = Array.from({ length: 80 }, () => {
+        const size = 12 + Math.random() * 22, dur = 8 + Math.random() * 12;
+        return `<i style="left:${Math.random() * 100}vw; font-size:${size}px; opacity:${0.5 + Math.random() * 0.5}; --drift:${(Math.random() * 120 - 60).toFixed(0)}px; animation-duration:${dur.toFixed(1)}s; animation-delay:-${(Math.random() * dur).toFixed(1)}s">❄</i>`;
+    }).join("");
+}
 function logoHtml(name) {
     const l = LOGOS[name]; if (!l) return "";
     const src = `/logos/${encodeURIComponent(l.file)}`;
@@ -120,7 +171,7 @@ function rowHtml(t) {
 }
 function openEdit(on) { editing = on; $("edit").classList.toggle("hidden", !on); $("err").textContent = ""; if (on) $("rows").innerHTML = tools.map(rowHtml).join(""); }
 async function load() {
-    try { const j = await (await fetch("/api/tools")).json(); $("iv").textContent = j.interval; tools = j.tools; winOk = j.windows; LOGOS = j.logos || {}; render(); }
+    try { const j = await (await fetch("/api/tools")).json(); $("iv").textContent = j.interval; tools = j.tools; winOk = j.windows; LOGOS = j.logos || {}; setChristmas(j.christmas); render(); }
     catch (e) { $("grid").innerHTML = `<div class="err">Landing service not reachable: ${esc(e.message)}</div>`; }
 }
 $("grid").onclick = async e => {

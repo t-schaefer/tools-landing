@@ -47,6 +47,9 @@ HOST_RE = re.compile(r'^[A-Za-z0-9.\-]{0,253}$')
 PATH_RE = re.compile(r'^/[\w\-./?=&%#~]*$')
 TASK_RE = re.compile(r'^[\w .\-]{1,80}$')
 UPDATE_TIMEOUT_SEC = 900
+# Christmas decoration on the page: automatic from 1 to 31 December (server date).
+# CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
+CHRISTMAS_TEST_UNTIL = "2026-10-18"
 IS_WINDOWS = os.name == "nt"
 
 log = logging.getLogger("landing")
@@ -197,6 +200,11 @@ def run_action(t, action):
     return job
 
 
+def christmas(today=None):
+    today = today or datetime.now().date()
+    return today.month == 12 or (bool(CHRISTMAS_TEST_UNTIL) and today.isoformat() <= CHRISTMAS_TEST_UNTIL)
+
+
 def key(t):
     return f"{t.get('host') or 'localhost'}:{t['port']}{t.get('path') or '/'}"
 
@@ -255,7 +263,8 @@ class Handler(BaseHTTPRequestHandler):
             tools = load_tools()
             self._json({"tools": [{**public(t), "status": STATUS.get(key(t)), "task_state": TASKS.get(t.get("task") or ""),
                                    "job": JOBS.get(t.get("task") or "")} for t in tools],
-                        "interval": CHECK_INTERVAL_SEC, "windows": IS_WINDOWS, "logos": logos()})
+                        "interval": CHECK_INTERVAL_SEC, "windows": IS_WINDOWS, "logos": logos(),
+                        "christmas": christmas(), "server_date": datetime.now().date().isoformat()})
         elif self.path.startswith("/logos/") and LOGO_FILE_RE.match(self.path[7:]) and (LOGO_DIR / self.path[7:]).is_file():
             body = (LOGO_DIR / self.path[7:]).read_bytes()
             self.send_response(200)
