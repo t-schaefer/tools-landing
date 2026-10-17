@@ -1,3 +1,5 @@
 tools.json
 service.log*
 __pycache__/
+engineering.json
+engineering.tmp
