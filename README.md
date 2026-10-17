@@ -48,13 +48,13 @@ unpack it and run `Install-Landing.bat` from there.
 
 ## Christmas
 
-From 1 to 31 December (by the server's date) the page shows Christmas
+From 1 November to 31 December (by the server's date) the page shows Christmas
 decoration: lights along the top, snow, a large banner with a link to Mariah
 Carey's "All I Want for Christmas Is You" on YouTube and the Premier League
 logo in a Christmas version (Santa hat, snow, lights, holly drawn on top - the
 logo file itself is unchanged). Nothing to switch - it
 turns on and off by itself. `CHRISTMAS_TEST_UNTIL` in `server.py` shows it
-before that up to and including that date (a preview; empty = December only).
+before that up to and including that date (a preview; empty = November and December only).
 Snow is off for users who chose "reduce motion".
 
 ## Start / Stop / Update from the page

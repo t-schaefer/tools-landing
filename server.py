@@ -47,7 +47,7 @@ HOST_RE = re.compile(r'^[A-Za-z0-9.\-]{0,253}$')
 PATH_RE = re.compile(r'^/[\w\-./?=&%#~]*$')
 TASK_RE = re.compile(r'^[\w .\-]{1,80}$')
 UPDATE_TIMEOUT_SEC = 900
-# Christmas decoration on the page: automatic from 1 to 31 December (server date).
+# Christmas decoration on the page: automatic from 1 November to 31 December (server date).
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
@@ -225,7 +225,7 @@ def run_action(t, action):
 
 def christmas(today=None):
     today = today or datetime.now().date()
-    return today.month == 12 or (bool(CHRISTMAS_TEST_UNTIL) and today.isoformat() <= CHRISTMAS_TEST_UNTIL)
+    return today.month in (11, 12) or (bool(CHRISTMAS_TEST_UNTIL) and today.isoformat() <= CHRISTMAS_TEST_UNTIL)
 
 
 def key(t):
