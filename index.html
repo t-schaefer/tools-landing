@@ -123,6 +123,7 @@
         <tbody id="rows"></tbody></table>
         <div class="bar"><button class="btn" id="addBtn">+ Tool</button><button class="btn primary" id="saveBtn">Save</button><button class="btn" id="cancelBtn">Cancel</button><span class="err" id="err"></span></div>
     </section>
+    <footer class="muted" id="foot" style="margin-top:28px; text-align:center; font-size:0.75rem"></footer>
 </main>
 <script>
 const $ = id => document.getElementById(id);
@@ -200,7 +201,8 @@ function rowHtml(t) {
 }
 function openEdit(on) { editing = on; $("edit").classList.toggle("hidden", !on); $("err").textContent = ""; if (on) $("rows").innerHTML = tools.map(rowHtml).join(""); }
 async function load() {
-    try { const j = await (await fetch("/api/tools")).json(); $("iv").textContent = j.interval; tools = j.tools; winOk = j.windows; LOGOS = j.logos || {}; setChristmas(j.christmas); render(); }
+    try { const j = await (await fetch("/api/tools")).json(); $("iv").textContent = j.interval; tools = j.tools; winOk = j.windows; LOGOS = j.logos || {}; setChristmas(j.christmas); render();
+        $("foot").textContent = `tools-landing ${j.version || "(old version)"} · running since ${(j.started || "?").replace("T", " ")} · server date ${j.server_date || "?"}`; }
     catch (e) { $("grid").innerHTML = `<div class="err">Landing service not reachable: ${esc(e.message)}</div>`; }
 }
 $("grid").onclick = async e => {

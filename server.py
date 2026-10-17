@@ -51,6 +51,12 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
+VERSION = "2026-10-17.4"            # shown in the page footer - bump with every change
+STARTED = datetime.now().isoformat(timespec="seconds")
+# logo when a tool has none set: first keyword found in its name (case and spaces ignored)
+LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
+                ("muon", "riedel"), ("fusion", "riedel"), ("riedel", "riedel"), ("artist", "riedel"),
+                ("bolero", "riedel"), ("premier", "premier-league")]
 
 log = logging.getLogger("landing")
 log.setLevel(logging.INFO)
@@ -155,9 +161,16 @@ def merge_server_fields(new_tools, old_tools):
     return new_tools
 
 
+def guess_logo(name):
+    n = re.sub(r"[^a-z0-9]", "", str(name or "").lower())
+    return next((logo for kw, logo in LOGO_BY_NAME if kw in n), "")
+
+
 def public(t):
     """What the browser gets: no script paths, only whether actions exist."""
     out = {k: t.get(k, "") for k in ("name", "description", "port", "path", "host", "logo", "note")}
+    if not out["logo"] or out["logo"] not in logos():
+        out["logo"] = guess_logo(t.get("name")) if guess_logo(t.get("name")) in logos() else ""
     out["task"] = t.get("task") or ""
     out["can_update"] = bool(t.get("update"))
     return out
@@ -290,7 +303,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"tools": [{**public(t), "status": STATUS.get(key(t)), "task_state": TASKS.get(t.get("task") or ""),
                                    "job": JOBS.get(t.get("task") or "")} for t in tools],
                         "interval": CHECK_INTERVAL_SEC, "windows": IS_WINDOWS, "logos": logos(),
-                        "christmas": christmas(), "server_date": datetime.now().date().isoformat()})
+                        "christmas": christmas(), "server_date": datetime.now().date().isoformat(),
+                        "version": VERSION, "started": STARTED})
         elif self.path.startswith("/logos/") and LOGO_FILE_RE.match(self.path[7:]) and (LOGO_DIR / self.path[7:]).is_file():
             body = (LOGO_DIR / self.path[7:]).read_bytes()
             self.send_response(200)
