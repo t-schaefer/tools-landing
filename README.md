@@ -42,6 +42,7 @@ GitHub zip copied over when git is not installed), starts the task again.
 ## Other
 
 - `Start-Landing.bat [port]` runs it in a console window for a test (port 8099 by default).
+- `Stop-Landing.bat` stops the service (task and any leftover python). It starts again at the next boot, with `Update-Landing.bat`, or `schtasks /run /tn ToolsLandingPage`.
 - `uninstall-task-windows.ps1` removes the task and firewall rule (`tools.json` stays).
 - `python server.py --port 8099` on any OS.
 
