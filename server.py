@@ -76,19 +76,22 @@ def load_tools():
 
 def fill_from_example():
     """A tools.json made by an older version lacks newer fields (logo, note, task,
-    update). Copy them from tools.example.json for tools with the same name - only
-    when the field is missing, never over a value set here (an empty one included)."""
+    update). Copy them from tools.example.json for tools with the same name (case and
+    spaces ignored) - only when the field is missing (or the logo empty), never over a
+    value set here."""
     if not TOOLS_FILE.exists():
         return
     tools = load_tools()
-    example = {t["name"]: t for t in json.loads(TOOLS_EXAMPLE_FILE.read_text(encoding="utf-8"))}
+    norm = lambda n: re.sub(r"[^a-z0-9]", "", str(n or "").lower())     # "MNSet" = "MNset" = "MN set"
+    example = {norm(t["name"]): t for t in json.loads(TOOLS_EXAMPLE_FILE.read_text(encoding="utf-8"))}
     changed = []
     for t in tools:
-        ex = example.get(t.get("name"))
+        ex = example.get(norm(t.get("name")))
         if not ex:
             continue
         for f in ("logo", "note", "task", "update"):
-            if f not in t and ex.get(f):
+            # a missing field is filled; an empty logo too (a card without logo is never wanted)
+            if (f not in t or (f == "logo" and not t[f])) and ex.get(f):
                 t[f] = ex[f]
                 changed.append(f"{t['name']}.{f}")
     if changed:

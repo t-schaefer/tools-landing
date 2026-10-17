@@ -44,7 +44,8 @@ unpack it and run `Install-Landing.bat` from there.
   + white). Drop another file there and it shows up in the choice.
 - Neuron Audio Router uses `evs`, the Riedel tools `riedel`. An older `tools.json`
   gets missing logo / note / task / update from `tools.example.json` on the next
-  start (by tool name, only where the field is missing - your own values stay).
+  start (by tool name, capitals and spaces ignored - "MNSet" = "MNset"; only where
+  the field is missing or the logo empty - your own values stay).
 
 ## Christmas
 
