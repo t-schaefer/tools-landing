@@ -31,7 +31,7 @@
     "host": "",
     "logo": "riedel",
     "note": "",
-    "service": "MNSet"
+    "controls": false
   },
   {
     "name": "MuoN config",
@@ -41,6 +41,7 @@
     "host": "",
     "logo": "riedel",
     "note": "",
-    "task": "MuoNConfigToolService"
+    "task": "MuoNConfigToolService",
+    "update": "../RiedelMuoNConfig/update-windows.ps1"
   }
 ]

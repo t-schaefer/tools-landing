@@ -180,7 +180,7 @@ function render() {
         const j = t.job, busy = j && j.state === "running";
         const ok = !!t.unit && winOk && !busy;
         const why = !t.unit ? "not set up – add \"task\" or \"service\" for this tool in tools.json on the server" : !winOk ? "only on the Windows server" : "";
-        const svc = !t.local ? "" : `<div class="svc"><span class="lbl" title="${esc(t.unit || why)}">Service: <b>${t.unit ? esc(t.unit_state || "…") : "not set up"}</b></span>
+        const svc = !t.local || !t.controls ? "" : `<div class="svc"><span class="lbl" title="${esc(t.unit || why)}">Service: <b>${t.unit ? esc(t.unit_state || "…") : "not set up"}</b></span>
                 <button class="btn sm" data-svc="start" data-i="${i}" ${ok ? "" : "disabled"} title="${esc(why)}">Start</button>
                 <button class="btn sm warn" data-svc="stop" data-i="${i}" ${ok ? "" : "disabled"} title="${esc(why)}">Stop</button>
                 ${t.can_update ? `<button class="btn sm" data-svc="update" data-i="${i}" ${ok ? "" : "disabled"} title="${esc(why)}">Update</button>` : ""}</div>`

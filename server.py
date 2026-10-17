@@ -51,7 +51,7 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
-VERSION = "2026-10-17.9"            # shown in the page footer - bump with every change
+VERSION = "2026-10-17.10"            # shown in the page footer - bump with every change
 STARTED = datetime.now().isoformat(timespec="seconds")
 # logo when a tool has none set: first keyword found in its name (case and spaces ignored)
 LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
@@ -95,9 +95,9 @@ def fill_from_example():
         ex = example.get(norm(t.get("name")))
         if not ex:
             continue
-        for f in ("logo", "note", "task", "service", "start", "stop", "update"):
+        for f in ("logo", "note", "task", "service", "start", "stop", "update", "controls"):
             # a missing field is filled; an empty logo too (a card without logo is never wanted)
-            if (f not in t or (f == "logo" and not t[f])) and ex.get(f):
+            if (f not in t or (f == "logo" and not t[f])) and (ex.get(f) or (f == "controls" and ex.get(f) is False)):
                 t[f] = ex[f]
                 changed.append(f"{t['name']}.{f}")
     if changed:
@@ -155,8 +155,8 @@ def merge_server_fields(new_tools, old_tools):
     old = {(o.get("host") or "", int(o.get("port") or 0)): o for o in old_tools}
     for t in new_tools:
         o = old.get((t["host"], t["port"]), {})
-        for f in ("task", "service", "start", "stop", "update"):
-            if o.get(f):
+        for f in ("task", "service", "start", "stop", "update", "controls"):
+            if f in o and (o[f] or o[f] is False):
                 t[f] = o[f]
     return new_tools
 
@@ -174,6 +174,7 @@ def public(t):
     u = unit_of(t)
     out["unit"] = f"{'Scheduled Task' if u[0] == 'task' else 'Windows service'} {u[1]}" if u else ""
     out["local"] = not t.get("host")
+    out["controls"] = t.get("controls") is not False      # "controls": false = no Service row at all
     out["can_update"] = bool(u and t.get("update"))
     return out
 
@@ -237,6 +238,8 @@ def unit_cmd(u, action):
 
 def run_action(t, action):
     """start / stop / update one tool's service. Returns the job record."""
+    if t.get("controls") is False:
+        raise ValueError(f"{t['name']}: no Start / Stop / Update for this tool")
     u = unit_of(t)
     if not u:
         raise ValueError(f"{t['name']}: not set up - add \"task\" or \"service\" for it in tools.json on the server")
