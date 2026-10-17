@@ -61,33 +61,42 @@ Snow is off for users who chose "reduce motion".
 ## Start / Stop / Update from the page
 
 Every card of a tool on this server has a **Service** row with **Start**,
-**Stop** and **Update** (each asks first; the output of an update is shown on
-the card). They work once the tool's Windows name is set in `tools.json` on the
-server - by hand, on purpose not in the page, so a browser can never choose
-what runs here. Until then the card says **not set up**.
+**Stop** and (where the tool has an update script) **Update**. Each asks first;
+the output is shown on the card. They work once the tool is set up in
+`tools.json` on the server - by hand, on purpose not in the page, so a browser
+can never choose what runs here. Until then the card says **not set up**.
 
-```json
-{ "name": "Neuron Audio Router", "port": 8101, "path": "/", "host": "",
-  "task": "NeuronAudioRouterService",
-  "update": "../neuron-acp-toolkit/update-windows.ps1" },
-{ "name": "MNset", "port": 8080, "path": "/", "host": "",
-  "service": "MNsetServiceName" }
+| Field | Meaning |
+|---|---|
+| `task` | Scheduled Task name - Start/Stop use it directly, the state comes from it |
+| `service` | Windows service name instead (services.msc → "Service name") |
+| `start` / `stop` | optional: the tool's own `.ps1` (what its Start/Stop .bat runs) - used instead of the task |
+| `update` | the tool's `update-windows.ps1` - shows the Update button |
+
+Script paths are relative to this folder and must be a `.ps1` inside the folder
+that holds the tools. **Clone everything into `C:\Apps`** like the Fusion
+Dashboard:
+
+```
+C:\Apps\tools-landing
+C:\Apps\neuron-acp-toolkit
+C:\Apps\Fusion Dashboard\RiedelFusionDashboard
 ```
 
-- `task`: a Scheduled Task name (Task Scheduler, or `schtasks /query`), or
-- `service`: a Windows service name (services.msc, the "Service name" field,
-  or `sc query state= all`).
-- `update` (optional): the tool's update `.ps1`, relative to this folder and
-  inside the folder that holds the repos (clone the tools next to each other,
-  e.g. `C:\Tools\tools-landing`, `C:\Tools\neuron-acp-toolkit`). Without it
-  there is no Update button - vendor tools (MNset, MuoN) update their own way.
-- The landing page runs as SYSTEM, so these actions run as SYSTEM. Every action
-  is logged in `service.log`. The landing page does not stop or update itself
-  (use `Stop-Landing.bat` / `Update-Landing.bat`).
-- Pre-set: Neuron Audio Router (task `NeuronAudioRouterService`) and MNset
-  (service `MNSet`) - an existing `tools.json` gets them on the next start.
-  For Fusion Dashboard and MuoN config, add `task` or `service` in `tools.json` (Notepad as Administrator),
-  then the page picks it up within 15 s.
+Pre-set (an existing `tools.json` gets these on the next start):
+
+| Tool | Unit | Stop | Update |
+|---|---|---|---|
+| Neuron Audio Router | task `NeuronAudioRouterService` | `stop-windows.ps1` | `update-windows.ps1` |
+| Fusion Dashboard | task `PLSFusionDashboardService` | `stop-windows.ps1` | `update-windows.ps1` |
+| MNset | service `MNSet` | service | – |
+| MuoN config | task `MuoNConfigToolService` | task | – (add `update` if wanted) |
+
+Start uses the task / service directly: Fusion's `start-windows.ps1` would run
+the dashboard in a console window when the task is missing, which hangs in the
+background. The landing page runs as SYSTEM, so all actions run as SYSTEM and
+are logged in `service.log`. It does not stop or update itself (use
+`Stop-Landing.bat` / `Update-Landing.bat`).
 
 ## Update
 

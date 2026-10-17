@@ -51,7 +51,7 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
-VERSION = "2026-10-17.8"            # shown in the page footer - bump with every change
+VERSION = "2026-10-17.9"            # shown in the page footer - bump with every change
 STARTED = datetime.now().isoformat(timespec="seconds")
 # logo when a tool has none set: first keyword found in its name (case and spaces ignored)
 LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
@@ -95,7 +95,7 @@ def fill_from_example():
         ex = example.get(norm(t.get("name")))
         if not ex:
             continue
-        for f in ("logo", "note", "task", "service", "update"):
+        for f in ("logo", "note", "task", "service", "start", "stop", "update"):
             # a missing field is filled; an empty logo too (a card without logo is never wanted)
             if (f not in t or (f == "logo" and not t[f])) and ex.get(f):
                 t[f] = ex[f]
@@ -155,7 +155,7 @@ def merge_server_fields(new_tools, old_tools):
     old = {(o.get("host") or "", int(o.get("port") or 0)): o for o in old_tools}
     for t in new_tools:
         o = old.get((t["host"], t["port"]), {})
-        for f in ("task", "service", "update"):
+        for f in ("task", "service", "start", "stop", "update"):
             if o.get(f):
                 t[f] = o[f]
     return new_tools
@@ -179,15 +179,19 @@ def public(t):
 
 
 def update_script(t):
-    """The tool's update script, resolved and checked: an existing *.ps1 inside the
-    folder that holds this repo and its sibling repos."""
-    rel = t.get("update") or ""
+    return tool_script(t, "update")
+
+
+def tool_script(t, field):
+    """The tool's own start / stop / update script from tools.json, resolved and checked:
+    an existing *.ps1 inside the folder that holds this repo and its sibling repos."""
+    rel = t.get(field) or ""
     if not rel:
-        raise ValueError(f"{t['name']}: no update script configured in tools.json")
+        raise ValueError(f"{t['name']}: no {field} script configured in tools.json")
     p = (BASE_DIR / rel).resolve()
     root = BASE_DIR.parent.resolve()
     if p.suffix.lower() != ".ps1" or root not in p.parents or not p.is_file():
-        raise ValueError(f"{t['name']}: update script not found or not allowed: {rel}")
+        raise ValueError(f"{t['name']}: {field} script not found or not allowed: {rel}")
     return p
 
 
@@ -238,7 +242,8 @@ def run_action(t, action):
         raise ValueError(f"{t['name']}: not set up - add \"task\" or \"service\" for it in tools.json on the server")
     if not IS_WINDOWS:
         raise ValueError("service control works only on the Windows server")
-    script = update_script(t) if action == "update" else None
+    # the tool's own script (like its Start/Stop/Update .bat) if set, else the task / service directly
+    script = tool_script(t, action) if (t.get(action) or action == "update") else None
     with _job_lock:
         j = JOBS.get(unit_key(u))
         if j and j["state"] == "running":
@@ -250,10 +255,11 @@ def run_action(t, action):
 
     def work():
         try:
-            if action in ("start", "stop"):
-                cmd, timeout = unit_cmd(u, action), 60
+            if script:
+                cmd = ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(script)]
+                timeout = UPDATE_TIMEOUT_SEC if action == "update" else 120
             else:
-                cmd, timeout = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)], UPDATE_TIMEOUT_SEC
+                cmd, timeout = unit_cmd(u, action), 60
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=str(script.parent) if script else None)
             job["output"] = (r.stdout + r.stderr).strip()[-8000:]
             job["state"] = "done" if r.returncode == 0 else "failed"

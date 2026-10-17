@@ -8,7 +8,8 @@
     "task": "NeuronAudioRouterService",
     "update": "../neuron-acp-toolkit/update-windows.ps1",
     "logo": "evs",
-    "note": "Not yet released – confirm with Thorsten before use."
+    "note": "Not yet released – confirm with Thorsten before use.",
+    "stop": "../neuron-acp-toolkit/stop-windows.ps1"
   },
   {
     "name": "Fusion Dashboard",
@@ -17,7 +18,10 @@
     "path": "/",
     "host": "",
     "logo": "riedel",
-    "note": ""
+    "note": "",
+    "task": "PLSFusionDashboardService",
+    "stop": "../Fusion Dashboard/RiedelFusionDashboard/stop-windows.ps1",
+    "update": "../Fusion Dashboard/RiedelFusionDashboard/update-windows.ps1"
   },
   {
     "name": "MNset",
@@ -36,6 +40,7 @@
     "path": "/",
     "host": "",
     "logo": "riedel",
-    "note": ""
+    "note": "",
+    "task": "MuoNConfigToolService"
   }
 ]
