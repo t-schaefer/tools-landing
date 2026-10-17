@@ -8,11 +8,11 @@ Tools landing page - one start page for the web tools running on this server.
 - Every 15 s the service checks each tool with one HTTP GET (2 s timeout) and
   shows up / down. The browser talks only to this service.
 - The tool list can be edited in the page (add / change / remove).
-- Service control (Windows): a tool with "task" (Scheduled Task name) gets
-  Start / Stop buttons, with "update" (path to its update-windows.ps1, relative
-  to this folder) an Update button. "task" and "update" are only read from
-  tools.json on the server - the page can not set them, so a browser can never
-  choose what runs here. Every action is logged in service.log.
+- Service control (Windows): a tool with "task" (Scheduled Task name) or
+  "service" (Windows service name) gets Start / Stop buttons, with "update" (path
+  to its update-windows.ps1, relative to this folder) an Update button. These are
+  only read from tools.json on the server, set by hand - the page can not set
+  them, so a browser can never choose what runs here. Every action is logged.
 
     python server.py               # http://<this pc>/
     python server.py --port 8100
@@ -51,7 +51,7 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
-VERSION = "2026-10-17.4"            # shown in the page footer - bump with every change
+VERSION = "2026-10-17.6"            # shown in the page footer - bump with every change
 STARTED = datetime.now().isoformat(timespec="seconds")
 # logo when a tool has none set: first keyword found in its name (case and spaces ignored)
 LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
@@ -67,8 +67,8 @@ log.addHandler(logging.StreamHandler())
 
 _tools_lock = threading.Lock()
 STATUS = {}          # tool key -> {"up", "ms", "code", "error", "checked"}
-TASKS = {}           # task name -> "Running" / "Ready" / "Disabled" / "not installed" / error text
-JOBS = {}            # task name -> {"action", "state", "started", "finished", "output"}
+STATES = {}          # "task:<name>" / "service:<name>" -> "Running" / "Ready" / "Stopped" / "not installed" ...
+JOBS = {}            # same key -> {"action", "state", "started", "finished", "output"}
 _job_lock = threading.Lock()
 
 
@@ -150,12 +150,12 @@ def clean_tool(t):
 
 
 def merge_server_fields(new_tools, old_tools):
-    """task / update are server-only: keep them from the old tools.json entry with the
+    """task / service / update are server-only: keep them from the old tools.json entry with the
     same host + port (the page can not set or change them)."""
     old = {(o.get("host") or "", int(o.get("port") or 0)): o for o in old_tools}
     for t in new_tools:
         o = old.get((t["host"], t["port"]), {})
-        for f in ("task", "update"):
+        for f in ("task", "service", "update"):
             if o.get(f):
                 t[f] = o[f]
     return new_tools
@@ -171,8 +171,10 @@ def public(t):
     out = {k: t.get(k, "") for k in ("name", "description", "port", "path", "host", "logo", "note")}
     if not out["logo"] or out["logo"] not in logos():
         out["logo"] = guess_logo(t.get("name")) if guess_logo(t.get("name")) in logos() else ""
-    out["task"] = t.get("task") or ""
-    out["can_update"] = bool(t.get("update"))
+    u = unit_of(t)
+    out["unit"] = f"{'Scheduled Task' if u[0] == 'task' else 'Windows service'} {u[1]}" if u else ""
+    out["local"] = not t.get("host")
+    out["can_update"] = bool(u and t.get("update"))
     return out
 
 
@@ -189,40 +191,67 @@ def update_script(t):
     return p
 
 
-def task_state(task):
+def unit_of(t):
+    """The tool's Windows unit as set by hand in tools.json: ("task", name) or ("service", name)."""
+    if t.get("task") and TASK_RE.match(t["task"]):
+        return ("task", t["task"])
+    if t.get("service") and TASK_RE.match(t["service"]):
+        return ("service", t["service"])
+    return None
+
+
+def unit_key(u):
+    return f"{u[0]}:{u[1]}" if u else ""
+
+
+def parse_sc_state(out):
+    m = re.search(r"STATE\s*:\s*\d+\s+(\w+)", out or "")
+    return {"RUNNING": "Running", "STOPPED": "Stopped", "START_PENDING": "Starting",
+            "STOP_PENDING": "Stopping", "PAUSED": "Paused"}.get(m.group(1), m.group(1).title()) if m else "?"
+
+
+def unit_state(u):
     if not IS_WINDOWS:
         return "only on Windows"
-    r = subprocess.run(["schtasks", "/query", "/tn", task, "/fo", "csv", "/nh"],
-                       capture_output=True, text=True, timeout=15)
-    if r.returncode != 0:
-        return "not installed"
-    cols = [c.strip('"') for c in r.stdout.strip().splitlines()[-1].split('","')]
-    return cols[-1] if cols else "?"
+    kind, name = u
+    if kind == "task":
+        r = subprocess.run(["schtasks", "/query", "/tn", name, "/fo", "csv", "/nh"], capture_output=True, text=True, timeout=15)
+        if r.returncode != 0:
+            return "not installed"
+        cols = [c.strip('"') for c in r.stdout.strip().splitlines()[-1].split('","')]
+        return cols[-1] if cols else "?"
+    r = subprocess.run(["sc.exe", "query", name], capture_output=True, text=True, timeout=15)
+    return parse_sc_state(r.stdout) if r.returncode == 0 else "not installed"
+
+
+def unit_cmd(u, action):
+    kind, name = u
+    if kind == "task":
+        return ["schtasks", "/run" if action == "start" else "/end", "/tn", name]
+    return ["sc.exe", "start" if action == "start" else "stop", name]
 
 
 def run_action(t, action):
     """start / stop / update one tool's service. Returns the job record."""
-    task = t.get("task") or ""
-    if not TASK_RE.match(task):
-        raise ValueError(f"{t['name']}: no Windows task configured in tools.json")
+    u = unit_of(t)
+    if not u:
+        raise ValueError(f"{t['name']}: not set up - add \"task\" or \"service\" for it in tools.json on the server")
     if not IS_WINDOWS:
         raise ValueError("service control works only on the Windows server")
     script = update_script(t) if action == "update" else None
     with _job_lock:
-        j = JOBS.get(task)
+        j = JOBS.get(unit_key(u))
         if j and j["state"] == "running":
             raise ValueError(f"{t['name']}: '{j['action']}' is still running")
         job = {"action": action, "state": "running", "started": datetime.now().isoformat(timespec="seconds"),
                "finished": None, "output": ""}
-        JOBS[task] = job
-    log.warning("SERVICE %s %s (task %s) requested from the page", action.upper(), t["name"], task)
+        JOBS[unit_key(u)] = job
+    log.warning("SERVICE %s %s (%s %s) requested from the page", action.upper(), t["name"], u[0], u[1])
 
     def work():
         try:
-            if action == "start":
-                cmd, timeout = ["schtasks", "/run", "/tn", task], 30
-            elif action == "stop":
-                cmd, timeout = ["schtasks", "/end", "/tn", task], 30
+            if action in ("start", "stop"):
+                cmd, timeout = unit_cmd(u, action), 60
             else:
                 cmd, timeout = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)], UPDATE_TIMEOUT_SEC
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=str(script.parent) if script else None)
@@ -232,7 +261,8 @@ def run_action(t, action):
             job["output"] += f"\n{e}"
             job["state"] = "failed"
         job["finished"] = datetime.now().isoformat(timespec="seconds")
-        TASKS[task] = task_state(task)
+        time.sleep(2)
+        STATES[unit_key(u)] = unit_state(u)
         log.warning("SERVICE %s %s: %s", action.upper(), t["name"], job["state"])
 
     threading.Thread(target=work, daemon=True).start()
@@ -270,11 +300,12 @@ def check_loop():
             for t, res in zip(tools, pool.map(check, tools)):
                 STATUS[key(t)] = {**res, "checked": datetime.now().isoformat(timespec="seconds")}
             for t in tools:
-                if t.get("task") and TASK_RE.match(t["task"]):
+                u = unit_of(t)
+                if u:
                     try:
-                        TASKS[t["task"]] = task_state(t["task"])
+                        STATES[unit_key(u)] = unit_state(u)
                     except Exception as e:
-                        TASKS[t["task"]] = f"? ({str(e)[:60]})"
+                        STATES[unit_key(u)] = f"? ({str(e)[:60]})"
         except Exception as e:
             log.warning("check failed: %s", e)
         time.sleep(CHECK_INTERVAL_SEC)
@@ -300,8 +331,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(PAGE_FILE.read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/api/tools":
             tools = load_tools()
-            self._json({"tools": [{**public(t), "status": STATUS.get(key(t)), "task_state": TASKS.get(t.get("task") or ""),
-                                   "job": JOBS.get(t.get("task") or "")} for t in tools],
+            self._json({"tools": [{**public(t), "status": STATUS.get(key(t)), "unit_state": STATES.get(unit_key(unit_of(t))),
+                                   "job": JOBS.get(unit_key(unit_of(t)))} for t in tools],
                         "interval": CHECK_INTERVAL_SEC, "windows": IS_WINDOWS, "logos": logos(),
                         "christmas": christmas(), "server_date": datetime.now().date().isoformat(),
                         "version": VERSION, "started": STARTED})

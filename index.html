@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tools</title>
+<title>Thorsten's Tools @ Qvest PLS</title>
 <style>
     :root { --bg: #f4f6f8; --card: #fff; --text: #212529; --muted: #6c757d; --line: #dee2e6; --accent: #0d6efd; --ok: #198754; --bad: #dc3545; }
     @media (prefers-color-scheme: dark) { :root { --bg: #16191d; --card: #1f2329; --text: #e9ecef; --muted: #9aa3ad; --line: #343a40; --accent: #6ea8fe; --ok: #4fbf87; --bad: #ff6b76; } }
@@ -13,6 +13,7 @@
     header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
     h1 { margin: 0; font-size: 1.5rem; }
     .muted { color: var(--muted); font-size: 0.85rem; }
+    h1 .at { color: var(--muted); font-weight: 500; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
     .tool { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; transition: border-color .15s; }
     .tool:hover { border-color: var(--accent); }
@@ -99,7 +100,7 @@
 <div class="snow" id="snow" aria-hidden="true"></div>
 <main>
     <header>
-        <div><h1>Tools on <span id="host"></span><span class="greet xmas-only" title="Christmas decoration 1 November – 31 December (server date)">🎄 Merry Christmas</span></h1><div class="muted">Status is checked by this server every <span id="iv">15</span> s.</div></div>
+        <div><h1>Thorsten's Tools <span class="at">@ Qvest PLS</span><span class="greet xmas-only" title="Christmas decoration 1 November – 31 December (server date)">🎄 Merry Christmas</span></h1><div class="muted">Server <span id="host"></span> · status is checked every <span id="iv">15</span> s.</div></div>
         <button class="btn" id="editBtn">Edit list</button>
     </header>
     <section class="xmas-banner" aria-label="Christmas">
@@ -128,6 +129,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+$("host").textContent = location.hostname;
 let tools = [], editing = false, winOk = false, LOGOS = {}, xmasBuilt = false;
 // Christmas decoration: on when the server says so (1-31 December by the server's date)
 function setChristmas(on) {
@@ -165,22 +167,24 @@ function confirmBox(text, ok) {
     });
 }
 const SVC_TEXT = {
-    start: t => `Start the ${t.name} service (task ${t.task}) on this server?`,
-    stop: t => `STOP the ${t.name} service (task ${t.task}) on this server?\n\nNobody can use ${t.name} until it is started again (Start button, update, or the next reboot).`,
+    start: t => `Start ${t.name} (${t.unit}) on this server?`,
+    stop: t => `STOP ${t.name} (${t.unit}) on this server?\n\nNobody can use ${t.name} until it is started again (Start button, update, or the next reboot).`,
     update: t => `Update ${t.name} on this server?\n\nIts update script stops the service, gets the newest version from GitHub and starts it again. ${t.name} is unavailable for a short moment.`,
 };
-$("host").textContent = location.hostname;
+
 const urlOf = t => `${location.protocol}//${t.host || location.hostname}:${t.port}${t.path || "/"}`;
 function render() {
     $("grid").innerHTML = tools.map((t, i) => {
         const s = t.status, cls = !s ? "" : s.up ? "up" : "down";
         const txt = !s ? "checking …" : s.up ? `running · ${s.ms} ms` : "not reachable";
         const j = t.job, busy = j && j.state === "running";
-        const svc = !t.task ? "" : `<div class="svc"><span class="lbl" title="Windows Scheduled Task ${esc(t.task)}">Service: <b>${esc(t.task_state || "…")}</b></span>
-                <button class="btn sm" data-svc="start" data-i="${i}" ${busy || !winOk ? "disabled" : ""}>Start</button>
-                <button class="btn sm warn" data-svc="stop" data-i="${i}" ${busy || !winOk ? "disabled" : ""}>Stop</button>
-                ${t.can_update ? `<button class="btn sm" data-svc="update" data-i="${i}" ${busy || !winOk ? "disabled" : ""}>Update</button>` : ""}</div>
-            ${j ? `<div class="job ${j.state}">${esc(j.action)}: ${busy ? "running …" : esc(j.state)} <span class="muted">${esc((j.finished || j.started || "").replace("T", " "))}</span>
+        const ok = !!t.unit && winOk && !busy;
+        const why = !t.unit ? "not set up – add \"task\" or \"service\" for this tool in tools.json on the server" : !winOk ? "only on the Windows server" : "";
+        const svc = !t.local ? "" : `<div class="svc"><span class="lbl" title="${esc(t.unit || why)}">Service: <b>${t.unit ? esc(t.unit_state || "…") : "not set up"}</b></span>
+                <button class="btn sm" data-svc="start" data-i="${i}" ${ok ? "" : "disabled"} title="${esc(why)}">Start</button>
+                <button class="btn sm warn" data-svc="stop" data-i="${i}" ${ok ? "" : "disabled"} title="${esc(why)}">Stop</button>
+                <button class="btn sm" data-svc="update" data-i="${i}" ${ok && t.can_update ? "" : "disabled"} title="${esc(why || (t.can_update ? "" : "no update script set for this tool"))}">Update</button></div>`
+            + `${j ? `<div class="job ${j.state}">${esc(j.action)}: ${busy ? "running …" : esc(j.state)} <span class="muted">${esc((j.finished || j.started || "").replace("T", " "))}</span>
                 ${j.output ? `<details ${j.state === "failed" ? "open" : ""}><summary>output</summary><pre>${esc(j.output)}</pre></details>` : ""}</div>` : ""}`;
         return `<div class="tool ${cls}" title="${esc(s && s.error ? s.error : "")}">${logoHtml(t.logo)}
             <h2><span class="dot ${cls}"></span><a href="${esc(urlOf(t))}" target="_blank" rel="noopener">${esc(t.name)}</a></h2>

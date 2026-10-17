@@ -1,4 +1,4 @@
-# Tools landing page
+# Tools landing page – "Thorsten's Tools @ Qvest PLS"
 
 One start page for the web tools running on a server: a card per tool with
 an up / down status, links that work from every PC. Standard-library Python
@@ -60,28 +60,33 @@ Snow is off for users who chose "reduce motion".
 
 ## Start / Stop / Update from the page
 
-A tool with a Windows task name gets **Start** and **Stop** buttons and its
-service state, and with an update script also **Update** (each asks first, the
-output of an update is shown on the card). Set them in `tools.json` on the
-server - on purpose not in the page, so a browser can never choose what runs:
+Every card of a tool on this server has a **Service** row with **Start**,
+**Stop** and **Update** (each asks first; the output of an update is shown on
+the card). They work once the tool's Windows name is set in `tools.json` on the
+server - by hand, on purpose not in the page, so a browser can never choose
+what runs here. Until then the card says **not set up**.
 
 ```json
 { "name": "Neuron Audio Router", "port": 8101, "path": "/", "host": "",
   "task": "NeuronAudioRouterService",
-  "update": "../neuron-acp-toolkit/update-windows.ps1" }
+  "update": "../neuron-acp-toolkit/update-windows.ps1" },
+{ "name": "MNset", "port": 8080, "path": "/", "host": "",
+  "service": "MNsetServiceName" }
 ```
 
-- `task`: the Scheduled Task name (Task Scheduler / `schtasks /query`).
-- `update`: path to the tool's update `.ps1`, relative to this folder. It must
-  be a `.ps1` inside the folder that holds this repo and its sibling repos
-  (clone the tools next to each other, e.g. `C:\Tools\tools-landing`,
-  `C:\Tools\neuron-acp-toolkit`).
+- `task`: a Scheduled Task name (Task Scheduler, or `schtasks /query`), or
+- `service`: a Windows service name (services.msc, the "Service name" field,
+  or `sc query state= all`).
+- `update` (optional): the tool's update `.ps1`, relative to this folder and
+  inside the folder that holds the repos (clone the tools next to each other,
+  e.g. `C:\Tools\tools-landing`, `C:\Tools\neuron-acp-toolkit`). Without it,
+  Update stays greyed out - vendor tools (MNset, MuoN) update their own way.
 - The landing page runs as SYSTEM, so these actions run as SYSTEM. Every action
   is logged in `service.log`. The landing page does not stop or update itself
   (use `Stop-Landing.bat` / `Update-Landing.bat`).
-- Only the Neuron Audio Router is pre-set. For Fusion Dashboard, MNset and
-  MuoN config add their task names (and update scripts) to `tools.json`.
-- An already installed page keeps its `tools.json`: add `task` / `update` there by hand.
+- Only the Neuron Audio Router is pre-set. For Fusion Dashboard, MNset and MuoN
+  config, add `task` or `service` in `tools.json` (Notepad as Administrator),
+  then the page picks it up within 15 s.
 
 ## Update
 
