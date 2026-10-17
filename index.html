@@ -54,6 +54,14 @@
     .edit { margin-top: 24px; } .edit .bar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
     .err { color: var(--bad); font-size: 0.85rem; }
     .hidden { display: none; }
+    .hbtns { display: flex; gap: 8px; align-items: center; }
+    .eng-only, .svc, .job { display: none !important; }
+    body.eng .eng-only { display: inline-block !important; } body.eng .svc, body.eng .job { display: flex !important; } body.eng .job { display: block !important; }
+    .engbar { display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin: -8px 0 16px; padding: 8px 12px; border-radius: 8px;
+              background: #fff3cd; color: #664d03; border: 1px solid #f0c36d; font-size: 0.88rem; }
+    body.eng .engbar { display: flex; }
+    @media (prefers-color-scheme: dark) { .engbar { background: #3a2f0b; color: #ffd875; border-color: #8a6d1d; } }
+    #engBtn.on { background: #fd7e14; border-color: #fd7e14; color: #fff; }
     /* ---- Christmas (1-31 Dec, server date) ---- */
     .xmas-only { display: none; } body.xmas .xmas-only { display: inline-flex; }
     .greet { align-items: center; gap: 6px; margin-left: 10px; padding: 2px 10px; border-radius: 999px; font-size: 0.85rem; font-weight: 600;
@@ -101,8 +109,11 @@
 <main>
     <header>
         <div><h1>Thorsten's Tools <span class="at">@ Qvest PLS</span><span class="greet xmas-only" title="Christmas decoration 1 November – 31 December (server date)">🎄 Merry Christmas</span></h1><div class="muted">Server <span id="host"></span> · status is checked every <span id="iv">15</span> s.</div></div>
-        <button class="btn" id="editBtn">Edit list</button>
+        <div class="hbtns"><button class="btn eng-only" id="editBtn">Edit list</button>
+            <button class="btn" id="engBtn" title="Show Start / Stop / Update and the tool list editor – for engineers">🔧 Engineering</button></div>
     </header>
+    <div class="engbar" id="engBar">🔧 <b>Engineering mode</b> – Start / Stop / Update and “Edit list” are visible. They act on the live server.
+        <button class="btn sm" id="engOff">Leave engineering mode</button></div>
     <section class="xmas-banner" aria-label="Christmas">
         <div class="pl-xmas" title="Premier League – Christmas edition">
             <span class="snowcap"></span><span class="bulbs" id="plBulbs"></span>
@@ -219,6 +230,14 @@ $("grid").onclick = async e => {
     if (!r.ok) alert(j.error);
     load();
 };
+// Engineering mode: service controls and the list editor are hidden unless switched on (per tab, not remembered)
+function setEng(on) {
+    document.body.classList.toggle("eng", on); $("engBtn").classList.toggle("on", on);
+    $("engBtn").textContent = on ? "🔧 Engineering ✓" : "🔧 Engineering";
+    if (!on && editing) openEdit(false);
+}
+$("engBtn").onclick = () => setEng(!document.body.classList.contains("eng"));
+$("engOff").onclick = () => setEng(false);
 $("editBtn").onclick = () => openEdit(!editing);
 $("cancelBtn").onclick = () => openEdit(false);
 $("addBtn").onclick = () => $("rows").insertAdjacentHTML("beforeend", rowHtml({ name: "", description: "", host: "", port: "", path: "/", logo: "", note: "" }));

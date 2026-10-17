@@ -60,7 +60,11 @@ Snow is off for users who chose "reduce motion".
 
 ## Start / Stop / Update from the page
 
-Every card of a tool on this server has a **Service** row with **Start**,
+Hidden by default: press **🔧 Engineering** (top right) to show them and
+**Edit list**; a yellow bar shows the mode is on. It is not remembered - a
+reload or new visitor starts without it.
+
+In engineering mode every card of a tool on this server has a **Service** row with **Start**,
 **Stop** and (where the tool has an update script) **Update**. Each asks first;
 the output is shown on the card. They work once the tool is set up in
 `tools.json` on the server - by hand, on purpose not in the page, so a browser
