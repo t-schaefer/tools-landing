@@ -19,6 +19,9 @@
     .tool .logo { height: 34px; display: flex; align-items: center; margin-bottom: 10px; }
     .tool .logo img { max-height: 34px; max-width: 150px; object-fit: contain; }
     td.mv { white-space: nowrap; width: 64px; } td select { width: 100%; font: inherit; padding: 3px 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--text); }
+    .tool .note { display: flex; gap: 8px; align-items: flex-start; margin: 2px 0 8px; padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+                  background: #fff3cd; color: #664d03; border: 1px solid #f0c36d; }
+    @media (prefers-color-scheme: dark) { .tool .note { background: #3a2f0b; color: #ffd875; border-color: #8a6d1d; } }
     .tool h2 a { color: inherit; text-decoration: none; } .tool h2 a:hover { color: var(--accent); }
     .tool .open { margin-top: auto; padding-top: 10px; }
     .svc { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.8rem; }
@@ -67,6 +70,15 @@
     .xmas-banner { display: none; position: relative; overflow: hidden; margin: 0 0 22px; padding: 26px 22px; border-radius: 16px; text-align: center; color: #fff;
                    background: linear-gradient(135deg, #b3121f 0%, #8e0e18 45%, #1f5f2e 100%); box-shadow: 0 10px 30px rgba(179,18,31,0.35); }
     body.xmas .xmas-banner { display: block; }
+    .pl-xmas { position: relative; display: inline-block; margin: 26px 0 6px; padding: 18px 28px 16px; border-radius: 18px;
+               background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.35); box-shadow: 0 0 0 6px rgba(255,255,255,0.06), 0 8px 24px rgba(0,0,0,0.25); }
+    .pl-xmas img.pl { display: block; height: clamp(64px, 11vw, 96px); width: auto; }
+    .pl-xmas .hat { position: absolute; left: 8px; top: -42px; width: clamp(58px, 10vw, 84px); transform: rotate(-18deg); filter: drop-shadow(0 3px 4px rgba(0,0,0,0.3)); }
+    .pl-xmas .holly { position: absolute; right: -16px; bottom: -14px; width: 54px; transform: rotate(12deg); }
+    .pl-xmas .snowcap { position: absolute; left: -4px; right: -4px; top: -8px; height: 16px; border-radius: 12px 12px 8px 8px; background: #fff;
+                        box-shadow: inset 0 -3px 0 rgba(170,190,215,0.6); clip-path: polygon(0 0,100% 0,100% 55%,94% 100%,86% 60%,76% 100%,64% 55%,52% 100%,40% 60%,28% 100%,16% 55%,6% 100%,0 60%); }
+    .pl-xmas .bulbs { position: absolute; inset: -6px; border-radius: 22px; pointer-events: none; }
+    .pl-xmas .bulbs b { position: absolute; width: 9px; height: 9px; border-radius: 50%; animation: twinkle 1.4s ease-in-out infinite alternate; }
     .xmas-banner h2 { margin: 0; font-size: clamp(2rem, 6vw, 3.6rem); line-height: 1.1; letter-spacing: 0.02em; text-shadow: 0 3px 12px rgba(0,0,0,0.35); }
     .xmas-banner p { margin: 8px 0 18px; font-size: 1.05rem; opacity: 0.95; }
     .xmas-banner .tree { font-size: clamp(2.4rem, 7vw, 4.2rem); display: inline-block; animation: sway 2.4s ease-in-out infinite alternate; }
@@ -88,8 +100,13 @@
         <button class="btn" id="editBtn">Edit list</button>
     </header>
     <section class="xmas-banner" aria-label="Christmas">
-        <div><span class="tree">🎄</span></div>
-        <h2>Merry Christmas! 🎅</h2>
+        <div class="pl-xmas" title="Premier League – Christmas edition">
+            <span class="snowcap"></span><span class="bulbs" id="plBulbs"></span>
+            <img class="pl" src="/logos/premier-league-white.svg" alt="Premier League">
+            <svg class="hat" viewBox="0 0 120 100" aria-hidden="true"><path d="M14 78 C 30 30, 70 6, 104 22 C 92 34, 86 52, 92 70 Z" fill="#d61f2c"/><path d="M14 78 C 30 30, 70 6, 104 22 C 96 28, 90 36, 87 46 C 70 30, 40 44, 26 76 Z" fill="#b3121f" opacity="0.55"/><rect x="4" y="68" width="98" height="24" rx="12" fill="#fff"/><circle cx="106" cy="22" r="12" fill="#fff"/><circle cx="102" cy="18" r="4" fill="#e9eef5"/></svg>
+            <svg class="holly" viewBox="0 0 80 60" aria-hidden="true"><path d="M40 34 C 26 20, 8 26, 2 16 C 12 16, 10 6, 18 6 C 18 14, 30 10, 30 18 C 36 14, 40 24, 40 34 Z" fill="#1f7a3a"/><path d="M40 34 C 54 20, 72 26, 78 16 C 68 16, 70 6, 62 6 C 62 14, 50 10, 50 18 C 44 14, 40 24, 40 34 Z" fill="#2e9b4c"/><circle cx="35" cy="38" r="7" fill="#d61f2c"/><circle cx="46" cy="40" r="7" fill="#e53935"/><circle cx="40" cy="30" r="6.5" fill="#c8102e"/><circle cx="33" cy="36" r="2" fill="#fff" opacity=".7"/></svg>
+        </div>
+        <h2><span class="tree">🎄</span> Merry Christmas! 🎅</h2>
         <p>Happy holidays – and a smooth New Year on air. ✨</p>
         <a class="play" href="https://www.youtube.com/watch?v=aAkMkVFwAoo" target="_blank" rel="noopener"><span class="yt">▶</span>Mariah Carey – All I Want for Christmas Is You</a>
     </section>
@@ -99,7 +116,7 @@
         <h2 style="font-size:1.05rem">Edit the tool list</h2>
         <div class="muted">Host empty = this server (the links then work from every PC). Saved in tools.json on the server.
             Service control (Windows task name and update script) can only be set in tools.json on the server, not here – it is kept when you save.</div>
-        <table><thead><tr><th>Order</th><th style="width:20%">Name</th><th>Description</th><th style="width:11%">Host</th><th style="width:72px">Port</th><th style="width:8%">Path</th><th style="width:10%">Logo</th><th style="width:40px"></th></tr></thead>
+        <table><thead><tr><th>Order</th><th style="width:20%">Name</th><th>Description</th><th style="width:11%">Host</th><th style="width:72px">Port</th><th style="width:8%">Path</th><th style="width:10%">Logo</th><th style="width:16%">Note</th><th style="width:40px"></th></tr></thead>
         <tbody id="rows"></tbody></table>
         <div class="bar"><button class="btn" id="addBtn">+ Tool</button><button class="btn primary" id="saveBtn">Save</button><button class="btn" id="cancelBtn">Cancel</button><span class="err" id="err"></span></div>
     </section>
@@ -117,6 +134,13 @@ function setChristmas(on) {
     const n = Math.ceil(window.innerWidth / 46);
     $("lights").innerHTML = Array.from({ length: n }, (_, i) =>
         `<span style="left:${i * 46 + 16}px; top:${10 + 9 * Math.sin(i / n * Math.PI)}px; background:${colors[i % colors.length]}; color:${colors[i % colors.length]}; animation-delay:${(i % 5) * 0.3}s"></span>`).join("");
+    const box = document.querySelector(".pl-xmas");
+    if (box) {   // fairy lights around the Premier League badge
+        const pts = [], N = 22;
+        for (let i = 0; i < N; i++) { const t = i / N, side = Math.floor(t * 4), f = (t * 4) % 1;
+            pts.push(side === 0 ? [f * 100, 0] : side === 1 ? [100, f * 100] : side === 2 ? [100 - f * 100, 100] : [0, 100 - f * 100]); }
+        $("plBulbs").innerHTML = pts.map(([x, y], i) => `<b style="left:calc(${x}% - 4px); top:calc(${y}% - 4px); background:${colors[i % colors.length]}; color:${colors[i % colors.length]}; animation-delay:${(i % 4) * 0.35}s"></b>`).join("");
+    }
     $("snow").innerHTML = Array.from({ length: 80 }, () => {
         const size = 12 + Math.random() * 22, dur = 8 + Math.random() * 12;
         return `<i style="left:${Math.random() * 100}vw; font-size:${size}px; opacity:${0.5 + Math.random() * 0.5}; --drift:${(Math.random() * 120 - 60).toFixed(0)}px; animation-duration:${dur.toFixed(1)}s; animation-delay:-${(Math.random() * dur).toFixed(1)}s">❄</i>`;
@@ -156,6 +180,7 @@ function render() {
                 ${j.output ? `<details ${j.state === "failed" ? "open" : ""}><summary>output</summary><pre>${esc(j.output)}</pre></details>` : ""}</div>` : ""}`;
         return `<div class="tool ${cls}" title="${esc(s && s.error ? s.error : "")}">${logoHtml(t.logo)}
             <h2><span class="dot ${cls}"></span><a href="${esc(urlOf(t))}" target="_blank" rel="noopener">${esc(t.name)}</a></h2>
+            ${t.note ? `<div class="note"><span>⚠️</span><span>${esc(t.note)}</span></div>` : ""}
             <p>${esc(t.description)}</p>
             <div class="addr">${esc(urlOf(t))}</div>
             <div class="st ${cls}">${txt}</div>
@@ -167,7 +192,8 @@ function rowHtml(t) {
     return `<tr><td class="mv"><button class="btn sm" data-mv="-1" title="Move up">▲</button><button class="btn sm" data-mv="1" title="Move down">▼</button></td>
         <td><input data-f="name" value="${esc(t.name)}"></td><td><input data-f="description" value="${esc(t.description)}"></td>
         <td><input data-f="host" value="${esc(t.host)}" placeholder="this server"></td><td><input data-f="port" type="number" min="1" max="65535" value="${esc(t.port)}"></td>
-        <td><input data-f="path" value="${esc(t.path || "/")}"></td><td><select data-f="logo">${opts}</select></td><td><button class="btn" data-del title="Remove">✕</button></td></tr>`;
+        <td><input data-f="path" value="${esc(t.path || "/")}"></td><td><select data-f="logo">${opts}</select></td>
+        <td><input data-f="note" value="${esc(t.note || "")}" placeholder="e.g. not yet released"></td><td><button class="btn" data-del title="Remove">✕</button></td></tr>`;
 }
 function openEdit(on) { editing = on; $("edit").classList.toggle("hidden", !on); $("err").textContent = ""; if (on) $("rows").innerHTML = tools.map(rowHtml).join(""); }
 async function load() {
@@ -186,7 +212,7 @@ $("grid").onclick = async e => {
 };
 $("editBtn").onclick = () => openEdit(!editing);
 $("cancelBtn").onclick = () => openEdit(false);
-$("addBtn").onclick = () => $("rows").insertAdjacentHTML("beforeend", rowHtml({ name: "", description: "", host: "", port: "", path: "/", logo: "" }));
+$("addBtn").onclick = () => $("rows").insertAdjacentHTML("beforeend", rowHtml({ name: "", description: "", host: "", port: "", path: "/", logo: "", note: "" }));
 $("rows").onclick = e => {
     const tr = e.target.closest("tr"); if (!tr) return;
     if (e.target.closest("[data-del]")) return tr.remove();

@@ -35,10 +35,13 @@ unpack it and run `Install-Landing.bat` from there.
 
 ## Logos and order
 
-- **Edit list** has ▲ / ▼ to change the order of the cards and a **Logo** choice per tool.
+- **Edit list** has ▲ / ▼ to change the order of the cards, a **Logo** choice
+  and a **Note** per tool (shown as a yellow hint on the card, e.g. the Neuron
+  Audio Router: "Not yet released – confirm with Thorsten before use.").
 - Logos live in `logos/`: `<name>.svg|png|jpg|webp`, optionally `<name>-white.*`
   for dark mode. Shipped: `evs` (EVS, from evs.com) and `riedel` (Riedel, from
-  riedel.net, with a white version). Drop another file there and it shows up in the choice.
+  riedel.net, with a white version), `premier-league` (premierleague.com, purple
+  + white). Drop another file there and it shows up in the choice.
 - Neuron Audio Router uses `evs`, the Riedel tools `riedel`. An already installed
   page keeps its `tools.json`: pick the logos once in Edit list.
 
@@ -46,7 +49,9 @@ unpack it and run `Install-Landing.bat` from there.
 
 From 1 to 31 December (by the server's date) the page shows Christmas
 decoration: lights along the top, snow, a large banner with a link to Mariah
-Carey's "All I Want for Christmas Is You" on YouTube. Nothing to switch - it
+Carey's "All I Want for Christmas Is You" on YouTube and the Premier League
+logo in a Christmas version (Santa hat, snow, lights, holly drawn on top - the
+logo file itself is unchanged). Nothing to switch - it
 turns on and off by itself. `CHRISTMAS_TEST_UNTIL` in `server.py` shows it
 before that up to and including that date (a preview; empty = December only).
 Snow is off for users who chose "reduce motion".

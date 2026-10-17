@@ -49,7 +49,7 @@ TASK_RE = re.compile(r'^[\w .\-]{1,80}$')
 UPDATE_TIMEOUT_SEC = 900
 # Christmas decoration on the page: automatic from 1 to 31 December (server date).
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
-CHRISTMAS_TEST_UNTIL = "2026-10-18"
+CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
 
 log = logging.getLogger("landing")
@@ -114,7 +114,8 @@ def clean_tool(t):
     if logo and logo not in logos():
         raise ValueError(f"logo {logo!r} not found in logos/")
     return {"name": name, "description": str(t.get("description", "")).strip()[:200],
-            "port": port, "path": path, "host": host, "logo": logo}
+            "port": port, "path": path, "host": host, "logo": logo,
+            "note": str(t.get("note", "") or "").strip()[:160]}
 
 
 def merge_server_fields(new_tools, old_tools):
@@ -131,7 +132,7 @@ def merge_server_fields(new_tools, old_tools):
 
 def public(t):
     """What the browser gets: no script paths, only whether actions exist."""
-    out = {k: t.get(k, "") for k in ("name", "description", "port", "path", "host", "logo")}
+    out = {k: t.get(k, "") for k in ("name", "description", "port", "path", "host", "logo", "note")}
     out["task"] = t.get("task") or ""
     out["can_update"] = bool(t.get("update"))
     return out
