@@ -18,16 +18,11 @@ Tools landing page - one start page for the web tools running on this server.
     python server.py --port 8100
 """
 import argparse
-import getpass
-import hashlib
-import hmac
 import json
 import logging
 import os
-import secrets
 import re
 import subprocess
-import sys
 import threading
 import time
 import urllib.error
@@ -42,9 +37,6 @@ BASE_DIR = Path(__file__).resolve().parent
 PAGE_FILE = BASE_DIR / "index.html"
 TOOLS_FILE = BASE_DIR / "tools.json"
 TOOLS_EXAMPLE_FILE = BASE_DIR / "tools.example.json"
-ENG_FILE = BASE_DIR / "engineering.json"    # engineering PIN (salted PBKDF2 hash only), git-ignored
-ENG_SESSION_SEC = 8 * 3600
-ENG_MAX_FAILS, ENG_LOCK_SEC = 5, 60
 LOGO_DIR = BASE_DIR / "logos"       # <name>.svg/.png, optional <name>-white.* for dark mode
 LOGO_FILE_RE = re.compile(r'^[a-z0-9\-]{1,40}\.(svg|png|jpg|jpeg|webp)$')
 LOGO_TYPES = {"svg": "image/svg+xml", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}
@@ -59,7 +51,7 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
-VERSION = "2026-10-17.12"            # shown in the page footer - bump with every change
+VERSION = "2026-10-17.11"            # shown in the page footer - bump with every change
 STARTED = datetime.now().isoformat(timespec="seconds")
 # logo when a tool has none set: first keyword found in its name (case and spaces ignored)
 LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
@@ -286,64 +278,6 @@ def run_action(t, action):
     return job
 
 
-# ---------------- engineering PIN ----------------
-# Start / Stop / Update and saving the tool list need an engineering login. The PIN is set on
-# the server (Set-Engineering-PIN.bat); only a salted hash is stored. A login gives a random
-# token for ENG_SESSION_SEC; the page keeps it per browser tab.
-_eng_lock = threading.Lock()
-ENG_TOKENS = {}                    # token -> expiry (epoch)
-ENG_FAILS = {"n": 0, "until": 0.0}
-
-
-def _pin_hash(pin, salt):
-    return hashlib.pbkdf2_hmac("sha256", pin.encode("utf-8"), bytes.fromhex(salt), 200_000).hex()
-
-
-def eng_pin_set():
-    return ENG_FILE.exists()
-
-
-def set_pin(pin):
-    if len(pin) < 4:
-        raise ValueError("the PIN needs at least 4 characters")
-    salt = secrets.token_hex(16)
-    tmp = ENG_FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"salt": salt, "hash": _pin_hash(pin, salt),
-                               "set": datetime.now().isoformat(timespec="seconds")}), encoding="utf-8")
-    tmp.replace(ENG_FILE)
-    with _eng_lock:
-        ENG_TOKENS.clear()                                  # a new PIN logs everybody out
-
-
-def eng_login(pin):
-    if not eng_pin_set():
-        raise PermissionError("no engineering PIN is set on this server - run Set-Engineering-PIN.bat there")
-    with _eng_lock:
-        now = time.time()
-        if now < ENG_FAILS["until"]:
-            raise PermissionError(f"too many wrong PINs - try again in {int(ENG_FAILS['until'] - now) + 1} s")
-        cfg = json.loads(ENG_FILE.read_text(encoding="utf-8"))
-        if not hmac.compare_digest(_pin_hash(str(pin or ""), cfg["salt"]), cfg["hash"]):
-            ENG_FAILS["n"] += 1
-            if ENG_FAILS["n"] >= ENG_MAX_FAILS:
-                ENG_FAILS.update(n=0, until=now + ENG_LOCK_SEC)
-            log.warning("engineering login: wrong PIN")
-            raise PermissionError("wrong PIN")
-        ENG_FAILS["n"] = 0
-        for t in [t for t, exp in ENG_TOKENS.items() if exp < now]:
-            del ENG_TOKENS[t]
-        token = secrets.token_urlsafe(24)
-        ENG_TOKENS[token] = now + ENG_SESSION_SEC
-    log.warning("engineering login")
-    return token
-
-
-def eng_ok(token):
-    with _eng_lock:
-        exp = ENG_TOKENS.get(token or "")
-        return bool(exp and exp > time.time())
-
-
 def christmas(today=None):
     today = today or datetime.now().date()
     return today.month in (11, 12) or (bool(CHRISTMAS_TEST_UNTIL) and today.isoformat() <= CHRISTMAS_TEST_UNTIL)
@@ -410,7 +344,7 @@ class Handler(BaseHTTPRequestHandler):
                                    "job": JOBS.get(unit_key(unit_of(t)))} for t in tools],
                         "interval": CHECK_INTERVAL_SEC, "windows": IS_WINDOWS, "logos": logos(),
                         "christmas": christmas(), "server_date": datetime.now().date().isoformat(),
-                        "version": VERSION, "started": STARTED, "eng_pin_set": eng_pin_set()})
+                        "version": VERSION, "started": STARTED})
         elif self.path.startswith("/logos/") and LOGO_FILE_RE.match(self.path[7:]) and (LOGO_DIR / self.path[7:]).is_file():
             body = (LOGO_DIR / self.path[7:]).read_bytes()
             self.send_response(200)
@@ -429,17 +363,6 @@ class Handler(BaseHTTPRequestHandler):
             if n > 100_000:
                 raise ValueError("request too large")
             req = json.loads(self.rfile.read(n) or b"{}")
-            if self.path == "/api/eng/login":
-                self._json({"token": eng_login(req.get("pin")), "valid_sec": ENG_SESSION_SEC})
-                return
-            if self.path == "/api/eng/logout":
-                with _eng_lock:
-                    ENG_TOKENS.pop(self.headers.get("X-Eng-Token") or "", None)
-                self._json({"ok": True})
-                return
-            if self.path in ("/api/tools", "/api/service") and not eng_ok(self.headers.get("X-Eng-Token")):
-                self._json({"error": "engineering login needed (🔧 Engineering, PIN)", "login": True}, 401)
-                return
             if self.path == "/api/tools":
                 # the whole list, as edited in the page
                 tools = [clean_tool(t) for t in req.get("tools", [])]
@@ -460,8 +383,6 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(run_action(hit[0], action))
             else:
                 self._json({"error": "not found"}, 404)
-        except PermissionError as e:
-            self._json({"error": str(e)}, 403)
         except (ValueError, TypeError, json.JSONDecodeError) as e:
             self._json({"error": str(e)}, 400)
 
@@ -475,15 +396,7 @@ def main():
     ap = argparse.ArgumentParser(description="Tools landing page")
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=80)
-    ap.add_argument("--set-pin", action="store_true", help="set the engineering PIN (asks for it) and exit")
     args = ap.parse_args()
-    if args.set_pin:
-        a = getpass.getpass("New engineering PIN (min. 4 characters): ")
-        if a != getpass.getpass("Repeat it: "):
-            sys.exit("The two entries differ - nothing changed.")
-        set_pin(a)
-        print(f"Engineering PIN saved ({ENG_FILE.name}). Logged-in sessions are logged out.")
-        return
     load_tools()
     fill_from_example()
     threading.Thread(target=check_loop, daemon=True).start()

@@ -60,16 +60,9 @@ Snow is off for users who chose "reduce motion".
 
 ## Start / Stop / Update from the page
 
-Hidden and locked by default: **🔧 Engineering** (top right) asks for the
-**engineering PIN**, then shows them and **Edit list**; a yellow bar shows you
-are logged in. The server checks the login on every action - not just the page.
-
-- Set the PIN once on the server: double-click **`Set-Engineering-PIN.bat`**
-  (asks twice, min. 4 characters). Only a salted hash is stored, in
-  `engineering.json` (git-ignored). A new PIN logs everybody out.
-- A login lasts 8 hours and only in that browser tab. 5 wrong PINs block logins
-  for a minute. Logins and actions are logged in `service.log`.
-- Without a PIN set, nobody can use Start / Stop / Update or save the list.
+Hidden by default: press **🔧 Engineering** (top right) to show them and
+**Edit list**; a yellow bar shows the mode is on. It is not remembered - a
+reload or new visitor starts without it.
 
 In engineering mode every card of a tool on this server has a **Service** row with **Start**,
 **Stop** and (where the tool has an update script) **Update**. Each asks first;

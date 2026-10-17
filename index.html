@@ -35,7 +35,7 @@
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .job { font-size: 0.78rem; margin-top: 6px; } .job.failed { color: var(--bad); } .job.done { color: var(--ok); }
     .job pre { white-space: pre-wrap; max-height: 180px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px; margin: 4px 0 0; font-size: 0.72rem; color: var(--text); }
-    .cbox-wrap { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .cbox-wrap { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
     .cbox { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; max-width: 460px; width: 100%; }
     .cbox p { margin: 0 0 14px; white-space: pre-wrap; } .cbox .row { display: flex; justify-content: flex-end; gap: 8px; }
     .tool.down { opacity: 0.75; }
@@ -112,8 +112,8 @@
         <div class="hbtns"><button class="btn eng-only" id="editBtn">Edit list</button>
             <button class="btn" id="engBtn" title="Show Start / Stop / Update and the tool list editor – for engineers">🔧 Engineering</button></div>
     </header>
-    <div class="engbar" id="engBar">🔧 <b>Engineering mode</b> – logged in. Start / Stop / Update and “Edit list” act on the live server.
-        <button class="btn sm" id="engOff">Log out</button></div>
+    <div class="engbar" id="engBar">🔧 <b>Engineering mode</b> – Start / Stop / Update and “Edit list” are visible. They act on the live server.
+        <button class="btn sm" id="engOff">Leave engineering mode</button></div>
     <section class="xmas-banner" aria-label="Christmas">
         <div class="pl-xmas" title="Premier League – Christmas edition">
             <span class="snowcap"></span><span class="bulbs" id="plBulbs"></span>
@@ -216,7 +216,7 @@ function rowHtml(t) {
 }
 function openEdit(on) { editing = on; $("edit").classList.toggle("hidden", !on); $("err").textContent = ""; if (on) $("rows").innerHTML = tools.map(rowHtml).join(""); }
 async function load() {
-    try { const j = await (await fetch("/api/tools")).json(); $("iv").textContent = j.interval; tools = j.tools; winOk = j.windows; LOGOS = j.logos || {}; PIN_SET = j.eng_pin_set !== false; setChristmas(j.christmas); render();
+    try { const j = await (await fetch("/api/tools")).json(); $("iv").textContent = j.interval; tools = j.tools; winOk = j.windows; LOGOS = j.logos || {}; setChristmas(j.christmas); render();
         $("foot").textContent = `tools-landing ${j.version || "(old version)"} · running since ${(j.started || "?").replace("T", " ")} · server date ${j.server_date || "?"}`; }
     catch (e) { $("grid").innerHTML = `<div class="err">Landing service not reachable: ${esc(e.message)}</div>`; }
 }
@@ -225,50 +225,19 @@ $("grid").onclick = async e => {
     const t = tools[+b.dataset.i], action = b.dataset.svc;
     if (!(await confirmBox(SVC_TEXT[action](t), action[0].toUpperCase() + action.slice(1)))) return;
     b.disabled = true;
-    const r = await engPost("/api/service", { name: t.name, action });
+    const r = await fetch("/api/service", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: t.name, action }) });
     const j = await r.json();
-    if (!r.ok) { if (j.login) engExpired(); alert(j.error); }
+    if (!r.ok) alert(j.error);
     load();
 };
-// Engineering mode: service controls and the list editor need an engineering login (PIN set on the
-// server). The token lives in this tab only (sessionStorage) and expires on the server after 8 h.
-let PIN_SET = true;
-const engToken = () => { try { return sessionStorage.getItem("engToken") || ""; } catch (e) { return ""; } };
-const setToken = v => { try { v ? sessionStorage.setItem("engToken", v) : sessionStorage.removeItem("engToken"); } catch (e) {} };
-const engPost = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Eng-Token": engToken() }, body: JSON.stringify(body) });
-function engExpired() { setToken(""); setEng(false); }
-function pinBox() {
-    return new Promise(res => {
-        const w = document.createElement("div"); w.className = "cbox-wrap";
-        w.innerHTML = `<div class="cbox"><p><b>🔧 Engineering login</b><br>Start / Stop / Update act on the live server. Enter the engineering PIN.</p>
-            <input type="password" id="pinIn" autocomplete="current-password" style="width:100%; padding:8px; font-size:1rem; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text)">
-            <div class="err" id="pinErr" style="min-height:1.2em; margin:6px 0"></div>
-            <div class="row"><button class="btn" data-a="0">Cancel</button><button class="btn primary" data-a="1">Log in</button></div></div>`;
-        const done = v => { w.remove(); res(v); };
-        const go = async () => {
-            const r = await fetch("/api/eng/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: w.querySelector("#pinIn").value }) });
-            const j = await r.json();
-            if (r.ok) { setToken(j.token); done(true); } else { w.querySelector("#pinErr").textContent = j.error; w.querySelector("#pinIn").select(); }
-        };
-        w.onclick = e => { const b = e.target.closest("[data-a]"); if (b) b.dataset.a === "1" ? go() : done(false); else if (e.target === w) done(false); };
-        w.querySelector("#pinIn").onkeydown = e => { if (e.key === "Enter") go(); if (e.key === "Escape") done(false); };
-        document.body.appendChild(w); w.querySelector("#pinIn").focus();
-    });
-}
-async function engToggle() {
-    if (document.body.classList.contains("eng")) return engLeave();
-    if (!PIN_SET) return confirmBox("No engineering PIN is set on this server yet.\n\nOn the server, double-click Set-Engineering-PIN.bat in the tools-landing folder, then log in here.", "OK");
-    if (!engToken() && !(await pinBox())) return;
-    setEng(true);
-}
-async function engLeave() { const t = engToken(); setToken(""); setEng(false); if (t) fetch("/api/eng/logout", { method: "POST", headers: { "X-Eng-Token": t } }); }
+// Engineering mode: service controls and the list editor are hidden unless switched on (per tab, not remembered)
 function setEng(on) {
     document.body.classList.toggle("eng", on); $("engBtn").classList.toggle("on", on);
     $("engBtn").textContent = on ? "🔧 Engineering ✓" : "🔧 Engineering";
     if (!on && editing) openEdit(false);
 }
-$("engBtn").onclick = engToggle;
-$("engOff").onclick = engLeave;
+$("engBtn").onclick = () => setEng(!document.body.classList.contains("eng"));
+$("engOff").onclick = () => setEng(false);
 $("editBtn").onclick = () => openEdit(!editing);
 $("cancelBtn").onclick = () => openEdit(false);
 $("addBtn").onclick = () => $("rows").insertAdjacentHTML("beforeend", rowHtml({ name: "", description: "", host: "", port: "", path: "/", logo: "", note: "" }));
@@ -282,13 +251,12 @@ $("rows").onclick = e => {
 };
 $("saveBtn").onclick = async () => {
     const list = [...$("rows").children].map(tr => Object.fromEntries([...tr.querySelectorAll("[data-f]")].map(i => [i.dataset.f, i.value])));
-    const r = await engPost("/api/tools", { tools: list });
+    const r = await fetch("/api/tools", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tools: list }) });
     const j = await r.json();
-    if (!r.ok) { $("err").textContent = j.error; if (j.login) engExpired(); return; }
+    if (!r.ok) { $("err").textContent = j.error; return; }
     openEdit(false); load();
 };
 load(); setInterval(() => { if (!editing) load(); }, 5000);
-if (engToken()) setEng(true);     // still logged in in this tab (the server decides on every action)
 </script>
 </body>
 </html>
