@@ -37,6 +37,9 @@ BASE_DIR = Path(__file__).resolve().parent
 PAGE_FILE = BASE_DIR / "index.html"
 TOOLS_FILE = BASE_DIR / "tools.json"
 TOOLS_EXAMPLE_FILE = BASE_DIR / "tools.example.json"
+SEEDED_FILE = BASE_DIR / "tools.seeded.json"   # default tools already offered (git-ignored)
+# the defaults that existed before tools.seeded.json - treated as already offered on old installs
+FIRST_DEFAULTS = ["Neuron Audio Router", "Fusion Dashboard", "MNset", "MuoN config"]
 LOGO_DIR = BASE_DIR / "logos"       # <name>.svg/.png, optional <name>-white.* for dark mode
 LOGO_FILE_RE = re.compile(r'^[a-z0-9\-]{1,40}\.(svg|png|jpg|jpeg|webp)$')
 LOGO_TYPES = {"svg": "image/svg+xml", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}
@@ -51,7 +54,7 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
-VERSION = "2026-10-17.13"            # shown in the page footer - bump with every change
+VERSION = "2026-10-18.1"            # shown in the page footer - bump with every change
 STARTED = datetime.now().isoformat(timespec="seconds")
 # logo when a tool has none set: first keyword found in its name (case and spaces ignored)
 LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
@@ -78,6 +81,37 @@ def load_tools():
             TOOLS_FILE.write_text(TOOLS_EXAMPLE_FILE.read_text(encoding="utf-8"), encoding="utf-8")
             log.info("created tools.json from tools.example.json")
         return json.loads(TOOLS_FILE.read_text(encoding="utf-8"))
+
+
+def _norm_name(n):
+    return re.sub(r"[^a-z0-9]", "", str(n or "").lower())
+
+
+def add_new_example_tools():
+    """Append tools that were newly added to tools.example.json to an existing tools.json.
+    Offered names are remembered in tools.seeded.json, so a tool deleted by hand does not
+    come back."""
+    example = json.loads(TOOLS_EXAMPLE_FILE.read_text(encoding="utf-8"))
+    fresh = not TOOLS_FILE.exists()
+    tools = load_tools()                                    # creates tools.json from the example if missing
+    if SEEDED_FILE.exists():
+        offered = set(json.loads(SEEDED_FILE.read_text(encoding="utf-8")))
+    else:
+        offered = {_norm_name(t["name"]) for t in tools} | {_norm_name(n) for n in FIRST_DEFAULTS}
+    added = []
+    if not fresh:
+        have = {_norm_name(t["name"]) for t in tools}
+        for t in example:
+            k = _norm_name(t["name"])
+            if k not in offered and k not in have:
+                tools.append(dict(t))
+                added.append(t["name"])
+        if added:
+            save_tools(tools)
+            log.info("tools.json: new default tools added: %s", ", ".join(added))
+    offered |= {_norm_name(t["name"]) for t in example}
+    SEEDED_FILE.write_text(json.dumps(sorted(offered), indent=1) + "\n", encoding="utf-8")
+    return added
 
 
 def fill_from_example():
@@ -398,6 +432,7 @@ def main():
     ap.add_argument("--port", type=int, default=80)
     args = ap.parse_args()
     load_tools()
+    add_new_example_tools()
     fill_from_example()
     threading.Thread(target=check_loop, daemon=True).start()
     srv = Server((args.host, args.port), Handler)

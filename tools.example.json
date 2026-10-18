@@ -43,5 +43,17 @@
     "note": "",
     "task": "MuoNConfigToolService",
     "update": "../RiedelMuoNConfig/update-windows.ps1"
+  },
+  {
+    "name": "Port Troubleshooter",
+    "description": "Find broken or wrongly documented connections: cable path from Patchmanager, IP list, snagging list and CloudVision side by side; mismatches, signal chain, ports to shut.",
+    "port": 8092,
+    "path": "/",
+    "host": "",
+    "logo": "",
+    "note": "New – feedback to Thorsten.",
+    "task": "PortTroubleshooterService",
+    "update": "../port-troubleshooter/update-windows.ps1",
+    "stop": "../port-troubleshooter/stop-windows.ps1"
   }
 ]

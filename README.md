@@ -12,6 +12,7 @@ Default tools (`tools.example.json`):
 | Fusion Dashboard | 8090 |
 | MNset | 8080 |
 | MuoN config | 8091 |
+| Port Troubleshooter | 8092 |
 
 ## Install on the Windows server (once)
 
@@ -89,9 +90,12 @@ C:\Apps\tools-landing
 C:\Apps\neuron-acp-toolkit
 C:\Apps\Fusion Dashboard\RiedelFusionDashboard
 C:\Apps\RiedelMuoNConfig
+C:\Apps\port-troubleshooter
 ```
 
-Pre-set (an existing `tools.json` gets these on the next start):
+Pre-set (an existing `tools.json` gets these on the next start; a tool that is new in
+`tools.example.json` is added once - remembered in `tools.seeded.json`, so a tool you
+delete does not come back):
 
 | Tool | Unit | Stop | Update |
 |---|---|---|---|
@@ -99,6 +103,7 @@ Pre-set (an existing `tools.json` gets these on the next start):
 | Fusion Dashboard | task `PLSFusionDashboardService` | `stop-windows.ps1` | `update-windows.ps1` |
 | MNset | – no Service row (`"controls": false`) | | |
 | MuoN config | task `MuoNConfigToolService` | task | `update-windows.ps1` |
+| Port Troubleshooter | task `PortTroubleshooterService` | `stop-windows.ps1` | `update-windows.ps1` |
 
 Start uses the task / service directly: Fusion's `start-windows.ps1` would run
 the dashboard in a console window when the task is missing, which hangs in the
