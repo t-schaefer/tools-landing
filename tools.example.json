@@ -50,7 +50,7 @@
     "port": 8092,
     "path": "/",
     "host": "",
-    "logo": "",
+    "logo": "arista",
     "note": "New – feedback to Thorsten.",
     "task": "PortTroubleshooterService",
     "update": "../port-troubleshooter/update-windows.ps1",

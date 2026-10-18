@@ -18,6 +18,8 @@
     .tool { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; transition: border-color .15s; }
     .tool:hover { border-color: var(--accent); }
     .tool .logo { height: 34px; display: flex; align-items: center; margin-bottom: 10px; }
+    .tool .logo img.inv-light { filter: invert(1); }
+    @media (prefers-color-scheme: dark) { .tool .logo img.inv-light { filter: none; } }
     .tool .logo img { max-height: 34px; max-width: 150px; object-fit: contain; }
     td.mv { white-space: nowrap; width: 64px; } td select { width: 100%; font: inherit; padding: 3px 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--text); }
     .tool .note { display: flex; gap: 8px; align-items: flex-start; margin: 2px 0 8px; padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
@@ -166,6 +168,7 @@ function setChristmas(on) {
 function logoHtml(name) {
     const l = LOGOS[name]; if (!l) return "";
     const src = `/logos/${encodeURIComponent(l.file)}`;
+    if (l.invert_light) return `<div class="logo"><img class="inv-light" src="${src}" alt="${esc(name)} logo"></div>`;
     return `<div class="logo"><picture>${l.white ? `<source srcset="/logos/${encodeURIComponent(l.white)}" media="(prefers-color-scheme: dark)">` : ""}<img src="${src}" alt="${esc(name)} logo"></picture></div>`;
 }
 function confirmBox(text, ok) {

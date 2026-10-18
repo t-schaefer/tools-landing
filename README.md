@@ -42,7 +42,8 @@ unpack it and run `Install-Landing.bat` from there.
 - Logos live in `logos/`: `<name>.svg|png|jpg|webp`, optionally `<name>-white.*`
   for dark mode. Shipped: `evs` (EVS, from evs.com) and `riedel` (Riedel, from
   riedel.net, with a white version), `premier-league` (premierleague.com, purple
-  + white). Drop another file there and it shows up in the choice.
+  + white), `arista` (arista.com; only a white version exists, so the page shows it
+  inverted - black - in light mode: a logo with only `<name>-white.*` works that way). Drop another file there and it shows up in the choice.
 - Neuron Audio Router uses `evs`, the Riedel tools `riedel`. An older `tools.json`
   gets missing logo / note / task / update from `tools.example.json` on the next
   start (by tool name, capitals and spaces ignored - "MNSet" = "MNset"; only where

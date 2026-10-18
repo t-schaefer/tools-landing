@@ -54,12 +54,13 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
-VERSION = "2026-10-18.1"            # shown in the page footer - bump with every change
+VERSION = "2026-10-18.2"            # shown in the page footer - bump with every change
 STARTED = datetime.now().isoformat(timespec="seconds")
 # logo when a tool has none set: first keyword found in its name (case and spaces ignored)
 LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
                 ("muon", "riedel"), ("fusion", "riedel"), ("riedel", "riedel"), ("artist", "riedel"),
-                ("bolero", "riedel"), ("premier", "premier-league")]
+                ("bolero", "riedel"), ("premier", "premier-league"), ("arista", "arista"),
+                ("porttroubleshooter", "arista")]
 
 log = logging.getLogger("landing")
 log.setLevel(logging.INFO)
@@ -159,6 +160,9 @@ def logos():
             base = f.rsplit(".", 1)[0]
             if base.endswith("-white") and base[:-6] in out:
                 out[base[:-6]]["white"] = f
+            elif base.endswith("-white"):
+                # only a white version (e.g. Arista): the page shows it inverted (dark) in light mode
+                out[base[:-6]] = {"file": f, "white": f, "invert_light": True}
     return out
 
 
