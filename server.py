@@ -54,7 +54,7 @@ UPDATE_TIMEOUT_SEC = 900
 # CHRISTMAS_TEST_UNTIL shows it before that up to and including this date (preview).
 CHRISTMAS_TEST_UNTIL = "2026-10-17"
 IS_WINDOWS = os.name == "nt"
-VERSION = "2026-10-18.2"            # shown in the page footer - bump with every change
+VERSION = "2026-10-18.3"            # shown in the page footer - bump with every change
 STARTED = datetime.now().isoformat(timespec="seconds")
 # logo when a tool has none set: first keyword found in its name (case and spaces ignored)
 LOGO_BY_NAME = [("neuron", "evs"), ("evs", "evs"), ("mnset", "riedel"), ("mediornet", "riedel"),
@@ -124,13 +124,15 @@ def fill_from_example():
         return
     tools = load_tools()
     norm = lambda n: re.sub(r"[^a-z0-9]", "", str(n or "").lower())     # "MNSet" = "MNset" = "MN set"
-    example = {norm(t["name"]): t for t in json.loads(TOOLS_EXAMPLE_FILE.read_text(encoding="utf-8"))}
+    ex_list = json.loads(TOOLS_EXAMPLE_FILE.read_text(encoding="utf-8"))
+    example = {norm(t["name"]): t for t in ex_list}
+    by_port = {(t.get("host") or "", int(t["port"])): t for t in ex_list}
     changed = []
     for t in tools:
-        ex = example.get(norm(t.get("name")))
+        ex = example.get(norm(t.get("name"))) or by_port.get((t.get("host") or "", int(t.get("port") or 0)))
         if not ex:
             continue
-        for f in ("logo", "note", "task", "service", "start", "stop", "update", "controls"):
+        for f in ("logo", "note", "task", "service", "start", "stop", "update", "controls", "links"):
             # a missing field is filled; an empty logo too (a card without logo is never wanted)
             if (f not in t or (f == "logo" and not t[f])) and (ex.get(f) or (f == "controls" and ex.get(f) is False)):
                 t[f] = ex[f]
@@ -184,7 +186,20 @@ def clean_tool(t):
         raise ValueError(f"logo {logo!r} not found in logos/")
     return {"name": name, "description": str(t.get("description", "")).strip()[:200],
             "port": port, "path": path, "host": host, "logo": logo,
-            "note": str(t.get("note", "") or "").strip()[:160]}
+            "note": str(t.get("note", "") or "").strip()[:160], "links": clean_links(t.get("links"))}
+
+
+def clean_links(links):
+    """Extra Open buttons on a card: [{"label", "port", "path"}] (same host as the tool), max 4."""
+    out = []
+    for l in (links or [])[:4]:
+        label = str(l.get("label", "")).strip()[:40]
+        port = int(l.get("port") or 0)
+        path = str(l.get("path") or "/").strip() or "/"
+        if not label or not 1 <= port <= 65535 or not PATH_RE.match(path):
+            raise ValueError(f"extra button {label or '?'}: needs a label and a port 1-65535 (e.g. MNSet:8080)")
+        out.append({"label": label, "port": port, "path": path})
+    return out
 
 
 def merge_server_fields(new_tools, old_tools):
@@ -207,6 +222,7 @@ def guess_logo(name):
 def public(t):
     """What the browser gets: no script paths, only whether actions exist."""
     out = {k: t.get(k, "") for k in ("name", "description", "port", "path", "host", "logo", "note")}
+    out["links"] = t.get("links") or []
     if not out["logo"] or out["logo"] not in logos():
         out["logo"] = guess_logo(t.get("name")) if guess_logo(t.get("name")) in logos() else ""
     u = unit_of(t)

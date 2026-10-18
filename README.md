@@ -36,7 +36,9 @@ unpack it and run `Install-Landing.bat` from there.
 
 ## Logos and order
 
-- **Edit list** has ▲ / ▼ to change the order of the cards, a **Logo** choice
+- **Edit list** has ▲ / ▼ to change the order of the cards, a **Logo** choice,
+  **More buttons** (extra Open buttons on the card, `Label:Port` or `Label:Port/path`,
+  several separated by commas - e.g. the Fusion card has `MNSet:8080`)
   and a **Note** per tool (shown as a yellow hint on the card, e.g. the Neuron
   Audio Router: "Not yet released – confirm with Thorsten before use.").
 - Logos live in `logos/`: `<name>.svg|png|jpg|webp`, optionally `<name>-white.*`
@@ -46,7 +48,7 @@ unpack it and run `Install-Landing.bat` from there.
   inverted - black - in light mode: a logo with only `<name>-white.*` works that way). Drop another file there and it shows up in the choice.
 - Neuron Audio Router uses `evs`, the Riedel tools `riedel`. An older `tools.json`
   gets missing logo / note / task / update from `tools.example.json` on the next
-  start (by tool name, capitals and spaces ignored - "MNSet" = "MNset"; only where
+  start (by tool name - capitals and spaces ignored - or else by its port - "MNSet" = "MNset"; only where
   the field is missing or the logo empty - your own values stay).
 
 ## Christmas

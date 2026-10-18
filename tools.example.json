@@ -21,7 +21,14 @@
     "note": "",
     "task": "PLSFusionDashboardService",
     "stop": "../Fusion Dashboard/RiedelFusionDashboard/stop-windows.ps1",
-    "update": "../Fusion Dashboard/RiedelFusionDashboard/update-windows.ps1"
+    "update": "../Fusion Dashboard/RiedelFusionDashboard/update-windows.ps1",
+    "links": [
+      {
+        "label": "MNSet",
+        "port": 8080,
+        "path": "/"
+      }
+    ]
   },
   {
     "name": "MNset",
